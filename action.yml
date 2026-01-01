@@ -33,7 +33,7 @@ runs:
       run: [ -n "${DISPLAY:-}" ] || (Xvfb :99 -screen 0 1280x1024x24 >&2 & sleep 5 && echo DISPLAY=:99 >> "$GITHUB_ENV")
     - name: "DANCE FOR ME"
       shell: bash
-      run: bash puppeteer.sh | xargs -0 -I '{}' printf 'result=%s\n' '{}' >> "$GITHOUT_OUTPUT"
+      run: bash ${{ github.action_path }}/puppeteer.sh | xargs -0 -I '{}' printf 'result=%s\n' '{}' >> "$GITHOUT_OUTPUT"
       env:
         GOAL: ${{ inputs.goal }}
         URL: ${{ inputs.url }}
