@@ -2,19 +2,26 @@ name: 'Autopuppeteer'
 description: 'Automatically puppeteer a webbrowser to accomplish a given task'
 inputs:
   goal:
+    description: 'A textual description of the goal to achieve.'
     required: true
   url:
+    description: 'The URL to start at'
     required: true
   openai_api_token:
+    description: 'A valid API token for OpenAI'
     required: true
   username:
+    description: 'The username if needed'
     default: ''
   password:
+    description: 'The password if needed'
     default: ''
   cookie:
+    description: 'A valid cookie to provide context'
     default: ''
 outputs:
   result:
+    description: 'The result if any'
 runs:
   using: composite
   steps:
@@ -28,7 +35,7 @@ runs:
     - name: "Install puppeteer"
       shell: bash
       run: npm install
-    - name: "Setup X server
+    - name: "Setup X server"
       shell: bash
       run: [ -n "${DISPLAY:-}" ] || (Xvfb :99 -screen 0 1280x1024x24 >&2 & sleep 5 && echo DISPLAY=:99 >> "$GITHUB_ENV")
     - name: "DANCE FOR ME"
