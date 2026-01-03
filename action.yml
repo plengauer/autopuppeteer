@@ -37,7 +37,8 @@ runs:
       run: npm install
     - name: "Setup X server"
       shell: bash
-      run: [ -n "${DISPLAY:-}" ] || (Xvfb :99 -screen 0 1280x1024x24 >&2 & sleep 5 && echo DISPLAY=:99 >> "$GITHUB_ENV")
+      run: |
+        [ -n "${DISPLAY:-}" ] || (Xvfb :99 -screen 0 1280x1024x24 >&2 & sleep 5 && echo DISPLAY=:99 >> "$GITHUB_ENV")
     - name: "DANCE FOR ME"
       shell: bash
       run: bash ${{ github.action_path }}/puppeteer.sh | xargs -0 -I '{}' printf 'result=%s\n' '{}' >> "$GITHOUT_OUTPUT"
