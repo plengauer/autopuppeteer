@@ -67,6 +67,7 @@ const __PASSWORD__ = '$PASSWORD';
 const __COOKIE__ = '$COOKIE';
 const __URL__ = '$URL';
 EOF
+exit_code=0
 conversation="$(mktemp autopuppeteer.conversation.XXXXXXXXXX.json)"
 jq << EOF -Rs '{ "role": "developer", "content": . }' >> "$conversation"
 You are dynamically writing node.js code using puppeteer to achieve a given goal on a website. All output must be plain valid node.js code, no markdown or similar. You can add comments for additional context.
@@ -103,14 +104,15 @@ jq << EOF -Rs '{ "role": "assistant", "content": . }' | tee -a "$conversation" |
 await page.goto(__URL__, { waitUntil: 'networkidle2', });
 console.log(await page.content());
 EOF
-while [ "$(jq < "$conversation" 'select(if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end | startswith("// DONE "))' | wc -l)" = 0 ]; do
+while [ "$(jq < "$conversation" 'select(if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end | startswith("// DONE "))' | wc -l)" = 0 ] || [ "$(jq < "$conversation" -s length)" -lt "${MAX_ITERATIONS:-100}" ]; do
   jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-25}"']) | .[]' | jq -s 'del(.[:-3][] | if .content | type == "string" then empty else .content[] | select(.type != "text") end) | .[]' \
     | jq -s '{ "model": "'"${OPENAI_MODEL:-gpt-5.1}"'", "reasoning_effort": "'"${OPENAI_REASONING_EFFORT:-high}"'", "messages": . }' \
     | curl --no-progress-meter --fail --retry 16 --max-time "$((60 * 60))" https://api.openai.com/v1/chat/completions -H "Authorization: Bearer $OPENAI_API_TOKEN" -H "Content-Type: application/json" --data-binary @- \
     | jq '.choices[0].message | { role: .role, content: .content }' | tee -a "$conversation" \
     | jq .content -r | tee /dev/stderr | ( grep -vE '^//' || true ) | puppeteer | jq -Rs '{ "role": "user", "content": . }' | enrich_with_screenshot >> "$conversation"
 done
-jq < "$conversation" -s '.[-1] | if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end' -r
+jq < "$conversation" 'if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end' -r | grep -vF '// DONE SUCCESS' || exit_code=1
+if [ "$exit_code" = 0]; then jq < "$conversation" -s '.[-1] | if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end' -r; fi
 jq << EOF -Rs '{ "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "role": "user", "content": . }' >> "$conversation"
 await browser.close();
 // process.exit(0);
@@ -122,3 +124,4 @@ exec 5<&-
 wait "$puppeteer_pid"
 sleep 1
 rm "$conversation" "$puppeteer_in" "$puppeteer_out"
+exit "$exit_code"
