@@ -41,7 +41,7 @@ runs:
         [ -n "${DISPLAY:-}" ] || (Xvfb :99 -screen 0 1280x1024x24 >&2 & sleep 5 && echo DISPLAY=:99 >> "$GITHUB_ENV")
     - name: "DANCE FOR ME"
       shell: bash
-      run: cd ${{ github.action_path }} && OTEL_SHELL_CONSERVATIVE_EXEC=TRUE bash autopuppeteer.sh | xargs -0 -I '{}' printf 'result=%s\n' '{}' >> "$GITHOUT_OUTPUT"
+      run: set -x && cd ${{ github.action_path }} && OTEL_SHELL_CONSERVATIVE_EXEC=TRUE bash autopuppeteer.sh | xargs -0 -I '{}' printf 'result=%s\n' '{}' >> "$GITHOUT_OUTPUT"
       env:
         GOAL: ${{ inputs.goal }}
         URL: ${{ inputs.url }}
