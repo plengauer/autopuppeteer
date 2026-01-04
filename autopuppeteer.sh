@@ -64,7 +64,7 @@ const __PASSWORD__ = '$PASSWORD';
 const __COOKIE__ = '$COOKIE';
 const __URL__ = '$URL';
 EOF
-conversation="$(mktemp puppeteer.conversation.XXXXXXXXXX.json)"
+conversation="$(mktemp autopuppeteer.conversation.XXXXXXXXXX.json)"
 jq << EOF -Rs '{ "role": "developer", "content": . }' >> "$conversation"
 You are dynamically writing node.js code using puppeteer to achieve a given goal on a website. All output must be plain valid node.js code, no markdown or similar. You can add comments for additional context.
 Every message from the user will be the stdout and stderr of your own code from your last response, and optionally a screenshot of the current state. All code you write is incremental running in the same node REPL after your last code.
