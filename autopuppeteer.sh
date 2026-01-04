@@ -87,11 +87,11 @@ await page.goto(__URL__, { waitUntil: 'networkidle2', });
 console.log(await page.content());
 EOF
 while [ "$(jq < "$conversation" 'select(if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end | startswith("// DONE "))' | wc -l)" = 0 ]; do
-  jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-10}"']) | .[]' | jq -s 'del(.[:-3][] | if .content | type == "string" then empty else .content[] | select(.type != "text") end) | .[]' \
+  jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-25}"']) | .[]' | jq -s 'del(.[:-3][] | if .content | type == "string" then empty else .content[] | select(.type != "text") end) | .[]' \
     | jq -s '{ "model": "'"${OPENAI_MODEL:-gpt-5.1}"'", "reasoning_effort": "'"${OPENAI_REASONING_EFFORT:-high}"'", "messages": . }' \
     | curl --no-progress-meter --fail --retry 4 --max-time "$((60 * 60))" https://api.openai.com/v1/chat/completions -H "Authorization: Bearer $OPENAI_API_TOKEN" -H "Content-Type: application/json" --data-binary @- \
     | jq '.choices[0].message | { role: .role, content: .content }' | tee -a "$conversation" \
-    | jq .content -r | ( grep -vE '^//' || true ) | puppeteer | jq -Rs '{ "role": "user", "content": . }' | enrich_with_screenshot >> "$conversation"
+    | jq .content -r | ( grep -vE '^//' || true ) | tee /dev/stderr | puppeteer | jq -Rs '{ "role": "user", "content": . }' | enrich_with_screenshot >> "$conversation"
 done
 jq < "$conversation" -s '.[-1] | if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end' -r
 jq << EOF -Rs '{ "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "role": "user", "content": . }' >> "$conversation"
