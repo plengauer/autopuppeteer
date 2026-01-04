@@ -20,6 +20,10 @@ inputs:
     description: 'A valid cookie to provide context'
     default: ''
   conversation_path: 
+    description: 'A path where to store the conversation for subsequent processing'
+    default: ''
+  conversation_artifact_name:
+    description: 'An name to upload an artifact under for debugging purposes'
     default: ''
 outputs:
   result:
