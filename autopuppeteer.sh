@@ -39,7 +39,7 @@ if [ "${LOG_OPENAI:-false}" = true ]; then
   alias curl='loggify curl'
 fi
 curl() {
-  \jq . | tee /dev/stderr | command curl "$@" | \jq . | tee /dev/stderr
+  \jq . | tee /dev/stderr | command curl -v "$@" | \jq . | tee /dev/stderr
 }
 
 if [ -n "${DISPLAY:-}" ]; then
