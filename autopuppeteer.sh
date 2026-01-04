@@ -21,9 +21,23 @@ puppeteer() {
 shopt -s expand_aliases
 alias jq='jq --unbuffered -c'
 
-loggify() {
-  tee /dev/stderr | "$@" | tee /dev/stderr
+loggify_in() {
+  tee /dev/stderr | "$@"
 }
+
+loggify() {
+  loggify_in "$@" | tee /dev/stderr
+}
+
+if [ "${LOG_PUPPETEER:-false}" = true ]; then
+  alias puppeteer='loggify puppeteer'
+elif [ "${LOG_PUPPETEER_IN:-false}" ]; then
+  alias puppeteer='loggify_in puppeteer'
+fi
+
+if [ "${LOG_OPENAI:-false}" = true ]; then
+  alias curl='loggify curl'
+fi
 
 if [ -n "${DISPLAY:-}" ]; then
   enrich_with_screenshot() {
@@ -98,6 +112,7 @@ jq << EOF -Rs '{ "role": "assistant", "content": . }' | tee -a "$conversation" |
 await browser.close();
 // process.exit(0);
 EOF
+if [ -n "${CONVERSATION_FILE:-}" ] && [ -w "$CONVERSATION_FILE" ]; then cp "$conversation" "$CONVERSATION_FILE"; fi
 
 exec 4>&-
 exec 5<&-
