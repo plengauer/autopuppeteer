@@ -19,6 +19,8 @@ inputs:
   cookie:
     description: 'A valid cookie to provide context'
     default: ''
+  debug:
+    default: ${{ runner.debug }}
 outputs:
   result:
     description: 'The result if any'
