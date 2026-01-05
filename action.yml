@@ -19,12 +19,6 @@ inputs:
   cookie:
     description: 'A valid cookie to provide context'
     default: ''
-  conversation_path: 
-    description: 'A path where to store the conversation for subsequent processing'
-    default: ''
-  conversation_artifact_name:
-    description: 'An name to upload an artifact under for debugging purposes'
-    default: ''
 outputs:
   result:
     description: 'The result if any'
@@ -55,4 +49,11 @@ runs:
         USERNAME: ${{ inputs.username }}
         PASSWORD: ${{ inputs.password }}
         COOKIE: ${{ inputs.cookie }}
-        CONVERSATION_FILE: ${{ inputs.conversation_path }}
+        LOG_PUPPETEER_IN: true
+        LOG_OPENAI: true
+    - name: "Upload debug logs"
+      if: failure()
+      uses: actions/upload-artifact@v6.0.0
+      with:
+        name: autopuppeteer_debug_logs
+        path: '/tmp/autopuppeteer.*'
