@@ -98,12 +98,12 @@ EOF
 puppeteer << EOF &> /dev/null
 if (__COOKIE__) { await page.setExtraHTTPHeaders({ Cookie: __COOKIE__ }); }
 EOF
-intro_count="$(wc -l < "$conversation")"
+intro_count="$(jq < "$conversation" -s length)"
 jq << EOF -Rs '{ "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "role": "user", "content": . }' | enrich_with_screenshot >> "$conversation"
 await page.goto(__URL__, { waitUntil: 'networkidle2', });
 console.log(await page.content());
 EOF
-while [ "$(jq < "$conversation" 'select(if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end | startswith("// DONE "))' | wc -l)" = 0 ] || [ "$(jq < "$conversation" -s length)" -lt "${MAX_ITERATIONS:-100}" ]; do
+while jq < "$conversation" 'select(if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end' -r | grep -vF '// DONE ' || [ "$(jq < "$conversation" -s length)" -lt "${MAX_ITERATIONS:-100}" ]; do
   jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-25}"']) | .[]' | jq -s 'del(.[:-3][] | if .content | type == "string" then empty else .content[] | select(.type != "text") end) | .[]' \
     | jq -s '{ "model": "'"${OPENAI_MODEL:-gpt-5.1}"'", "reasoning_effort": "'"${OPENAI_REASONING_EFFORT:-high}"'", "messages": . }' \
     | curl --no-progress-meter --fail --retry 16 --max-time "$((60 * 60))" https://api.openai.com/v1/chat/completions -H "Authorization: Bearer $OPENAI_API_TOKEN" -H "Content-Type: application/json" --data-binary @- \
