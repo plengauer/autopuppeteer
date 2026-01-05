@@ -111,7 +111,7 @@ while [ "$(jq < "$conversation" 'select(if .content | type == "string" then .con
     | jq .content -r | ( grep -vE '^//' || true ) | puppeteer | jq -Rs '{ "role": "user", "content": . }' | enrich_with_screenshot >> "$conversation"
 done
 jq < "$conversation" 'if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end' -r | grep -vF '// DONE SUCCESS' || exit_code=1
-if [ "$exit_code" = 0]; then jq < "$conversation" -s '.[-1] | if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end' -r; fi
+if [ "$exit_code" = 0 ]; then jq < "$conversation" -s '.[-1] | if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end' -r; fi
 jq << EOF -Rs '{ "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "role": "user", "content": . }' >> "$conversation"
 await browser.close();
 // process.exit(0);
