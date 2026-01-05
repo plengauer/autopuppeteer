@@ -22,22 +22,26 @@ shopt -s expand_aliases
 alias jq='jq --unbuffered -c'
 
 loggify_in() {
-  tee /dev/stderr | "$@"
+  log_in="$1"; shift
+  tee "$log_in" | "$@"
 }
 
 loggify() {
-  loggify_in "$@" | tee /dev/stderr
+  log_in="$1"; shift
+  log_out="$2"; shift
+  loggify_in "$log_in" "$@" | tee "$log_out"
 }
 
 if [ "${LOG_PUPPETEER:-false}" = true ]; then
-  alias puppeteer='loggify puppeteer'
+  alias puppeteer='loggify /dev/stderr /dev/stderr puppeteer'
 elif [ "${LOG_PUPPETEER_IN:-false}" = true ]; then
-  alias puppeteer='loggify_in puppeteer'
+  alias puppeteer='loggify_in /dev/stderr puppeteer'
 fi
 
 if [ "${LOG_OPENAI:-false}" = true ]; then
   curl() {
-    \jq . | loggify command curl -v "$@"
+    id="$RANDOM"
+    loggify "$(mktemp autopuppeteer.curl."$id".in.XXXXXXXXXX.json)" "$(mktemp autopuppeteer.curl."$id".out.XXXXXXXXXX.json)" curl -v "$@" 2> "$(mktemp autopuppeteer.curl."$id".err.XXXXXXXXXX.json)"
   }
 fi
 
@@ -105,7 +109,7 @@ EOF
 while ! jq < "$conversation" 'select(if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end)' -r | grep -F '// DONE ' > /dev/null || [ "$(jq < "$conversation" -s length)" -lt "${MAX_ITERATIONS:-100}" ]; do
   jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-25}"']) | .[]' | jq -s 'del(.[:-3][] | if .content | type == "string" then empty else .content[] | select(.type != "text") end) | .[]' \
     | jq -s '{ "model": "'"${OPENAI_MODEL:-gpt-5.1}"'", "reasoning_effort": "'"${OPENAI_REASONING_EFFORT:-high}"'", "messages": . }' \
-    | curl --no-progress-meter --fail --retry 16 --max-time "$((60 * 60))" https://api.openai.com/v1/chat/completions -H "Authorization: Bearer $OPENAI_API_TOKEN" -H "Content-Type: application/json" --data-binary @- \
+    | curl -v --no-progress-meter --fail --retry 16 --max-time "$((60 * 60))" https://api.openai.com/v1/chat/completions -H "Authorization: Bearer $OPENAI_API_TOKEN" -H "Content-Type: application/json" --data-binary @- \
     | jq '.choices[0].message | { role: .role, content: .content }' | tee -a "$conversation" \
     | jq .content -r | ( grep -vE '^//' || true ) | puppeteer | jq -Rs '{ "role": "user", "content": . }' | enrich_with_screenshot >> "$conversation"
 done
@@ -115,11 +119,10 @@ jq << EOF -Rs '{ "role": "assistant", "content": . }' | tee -a "$conversation" |
 await browser.close();
 // process.exit(0);
 EOF
-if [ -n "${CONVERSATION_FILE:-}" ] && [ -w "$CONVERSATION_FILE" ]; then cp "$conversation" "$CONVERSATION_FILE"; fi
 
 exec 4>&-
 exec 5<&-
 wait "$puppeteer_pid"
 sleep 1
-rm "$conversation" "$puppeteer_in" "$puppeteer_out"
+rm "$puppeteer_in" "$puppeteer_out"
 exit "$exit_code"
