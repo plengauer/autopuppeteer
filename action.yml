@@ -51,14 +51,14 @@ runs:
         COOKIE: ${{ inputs.cookie }}
         LOG_PUPPETEER_IN: true
     - name: "Preprocess debug logs"
-      if: failure()
+      if: failure() || cancelled()
       shell: bash
       run: |
         jq < /tmp/autopuppeteer.conversation.*.json --unbuffered 'if .content | type == "string" then empty else .content[] end | select(.type == "image_url") | .image_url.url \
           | jq --unbufferd -s 'to_entries[] | [ .value, .key ] | @tsv' -r | cut -d , -f 2- \
           | while IFS=$'\t' read -r image index; do base64 -d <<< "$image" > /tmp/autopuppeteer.step."$index".png; done
     - name: "Upload debug logs"
-      if: !success()
+      if: failure() || cancelled()
       uses: actions/upload-artifact@v6.0.0
       with:
         name: autopuppeteer_debug_logs
