@@ -31,7 +31,7 @@ loggify() {
 
 if [ "${LOG_PUPPETEER:-false}" = true ]; then
   alias puppeteer='loggify puppeteer'
-elif [ "${LOG_PUPPETEER_IN:-false}" ]; then
+elif [ "${LOG_PUPPETEER_IN:-false}" = true ]; then
   alias puppeteer='loggify_in puppeteer'
 fi
 
