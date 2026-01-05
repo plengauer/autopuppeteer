@@ -64,7 +64,6 @@ puppeteer << EOF &> /dev/null
 const __USERNAME__ = '$USERNAME';
 const __PASSWORD__ = '$PASSWORD';
 const __COOKIE__ = '$COOKIE';
-const __URL__ = '$URL';
 EOF
 exit_code=0
 conversation="$(mktemp autopuppeteer.conversation.XXXXXXXXXX.json)"
@@ -78,7 +77,7 @@ When you are stuck and there are low chances of success, print "// DONE FAILURE"
 Never directly print sensitive data like usernames, passwords, or cookies. Only write code to handle them directly via variables.
 If you need to use sensitive data, like username or password, assume that their raw values are stored in string constants called __USERNAME__ and __PASSWORD__ respectively.
 Think extra hard and follow these instructions to the letter!
-Your goal is to $GOAL starting at $URL.
+Your goal is to $GOAL.
 ${HINT:-}
 EOF
 if [ "${USE_STEALTH:-false}" = true ]; then
@@ -100,7 +99,7 @@ if (__COOKIE__) { await page.setExtraHTTPHeaders({ Cookie: __COOKIE__ }); }
 EOF
 intro_count="$(jq < "$conversation" -s length)"
 jq << EOF -Rs '{ "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "role": "user", "content": . }' | enrich_with_screenshot >> "$conversation"
-await page.goto(__URL__, { waitUntil: 'networkidle2', });
+await page.goto('$URL', { waitUntil: 'networkidle2', });
 console.log(await page.content());
 EOF
 while ! jq < "$conversation" 'select(if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end)' -r | grep -F '// DONE ' > /dev/null || [ "$(jq < "$conversation" -s length)" -lt "${MAX_ITERATIONS:-100}" ]; do
