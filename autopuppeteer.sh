@@ -36,11 +36,10 @@ elif [ "${LOG_PUPPETEER_IN:-false}" ]; then
 fi
 
 if [ "${LOG_OPENAI:-false}" = true ]; then
-  alias curl='loggify curl'
+  curl() {
+    \jq . | loggify command curl -v "$@"
+  }
 fi
-curl() {
-  \jq . | tee /dev/stderr | command curl -v "$@" | \jq . | tee /dev/stderr
-}
 
 if [ -n "${DISPLAY:-}" ]; then
   enrich_with_screenshot() {
@@ -109,7 +108,7 @@ while [ "$(jq < "$conversation" 'select(if .content | type == "string" then .con
     | jq -s '{ "model": "'"${OPENAI_MODEL:-gpt-5.1}"'", "reasoning_effort": "'"${OPENAI_REASONING_EFFORT:-high}"'", "messages": . }' \
     | curl --no-progress-meter --fail --retry 16 --max-time "$((60 * 60))" https://api.openai.com/v1/chat/completions -H "Authorization: Bearer $OPENAI_API_TOKEN" -H "Content-Type: application/json" --data-binary @- \
     | jq '.choices[0].message | { role: .role, content: .content }' | tee -a "$conversation" \
-    | jq .content -r | tee /dev/stderr | ( grep -vE '^//' || true ) | puppeteer | jq -Rs '{ "role": "user", "content": . }' | enrich_with_screenshot >> "$conversation"
+    | jq .content -r | ( grep -vE '^//' || true ) | puppeteer | jq -Rs '{ "role": "user", "content": . }' | enrich_with_screenshot >> "$conversation"
 done
 jq < "$conversation" 'if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end' -r | grep -vF '// DONE SUCCESS' || exit_code=1
 if [ "$exit_code" = 0]; then jq < "$conversation" -s '.[-1] | if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end' -r; fi
