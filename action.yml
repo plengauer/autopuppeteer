@@ -58,7 +58,7 @@ runs:
           | jq --unbufferd -s 'to_entries[] | [ .value, .key ] | @tsv' -r | cut -d , -f 2- \
           | while IFS=$'\t' read -r image index; do base64 -d <<< "$image" > /tmp/autopuppeteer.step."$index".png; done
     - name: "Upload debug logs"
-      if: failure()
+      if: !success()
       uses: actions/upload-artifact@v6.0.0
       with:
         name: autopuppeteer_debug_logs
