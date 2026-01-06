@@ -22,8 +22,10 @@ inputs:
 outputs:
   result:
     description: 'The result value if any'
+    value: ${{ steps.autopuppeteer.outputs.result }}
   result_path:
     description: 'The result path'
+    value: ${{ steps.autopuppeteer.outputs.result_path }}
 runs:
   using: composite
   steps:
@@ -42,6 +44,7 @@ runs:
       run: |
         [ -n "${DISPLAY:-}" ] || (Xvfb :99 -screen 0 1280x1024x24 >&2 & sleep 5 && echo DISPLAY=:99 >> "$GITHUB_ENV")
     - name: "DANCE FOR ME"
+      id: autopuppeteer
       shell: bash
       run: |
         cd ${{ github.action_path }} 
