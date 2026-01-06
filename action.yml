@@ -47,7 +47,8 @@ runs:
         cd ${{ github.action_path }} 
         result_path="$(mktemp)"
         echo result_path="$result_path" >> "$GITHUB_OUTPUT"
-        OTEL_SHELL_CONSERVATIVE_EXEC=TRUE LOG_PUPPETEER_IN=true bash autopuppeteer.sh | tee "$result_path" | xargs -0 -I '{}' printf 'result=%s\n' '{}' >> "$GITHUB_OUTPUT"
+        OTEL_SHELL_CONSERVATIVE_EXEC=TRUE LOG_PUPPETEER_IN=true bash autopuppeteer.sh \
+          | tee "$result_path" | xargs -0 -I '{}' printf 'result=%s\n' '{}' >> "$GITHUB_OUTPUT"
       env:
         GOAL: ${{ inputs.goal }}
         URL: ${{ inputs.url }}
