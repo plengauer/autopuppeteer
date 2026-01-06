@@ -21,7 +21,9 @@ inputs:
     default: ''
 outputs:
   result:
-    description: 'The result if any'
+    description: 'The result value if any'
+  result_path:
+    description: 'The result path'
 runs:
   using: composite
   steps:
@@ -41,7 +43,11 @@ runs:
         [ -n "${DISPLAY:-}" ] || (Xvfb :99 -screen 0 1280x1024x24 >&2 & sleep 5 && echo DISPLAY=:99 >> "$GITHUB_ENV")
     - name: "DANCE FOR ME"
       shell: bash
-      run: cd ${{ github.action_path }} && OTEL_SHELL_CONSERVATIVE_EXEC=TRUE LOG_PUPPETEER_IN=true bash autopuppeteer.sh | xargs -0 -I '{}' printf 'result=%s\n' '{}' >> "$GITHUB_OUTPUT"
+      run: |
+        cd ${{ github.action_path }} 
+        result_path="$(mktemp)"
+        echo result_path="$result_path" >> "$GITHUB_OUTPUT"
+        OTEL_SHELL_CONSERVATIVE_EXEC=TRUE LOG_PUPPETEER_IN=true bash autopuppeteer.sh | tee "$result_path" | xargs -0 -I '{}' printf 'result=%s\n' '{}' >> "$GITHUB_OUTPUT"
       env:
         GOAL: ${{ inputs.goal }}
         URL: ${{ inputs.url }}
