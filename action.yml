@@ -50,6 +50,7 @@ runs:
         PASSWORD: ${{ inputs.password }}
         COOKIE: ${{ inputs.cookie }}
         LOG_PUPPETEER_IN: true
+        LOG_CURL: true
     - name: "Preprocess debug logs"
       if: failure() || cancelled()
       shell: bash
