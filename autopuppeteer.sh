@@ -1,6 +1,10 @@
 #!/bin/bash
 set -eu -o pipefail
 
+shopt -s expand_aliases
+alias mktemp='mktemp --tmpdir'
+alias jq='jq --unbuffered -c'
+
 puppeteer_in="$(mktemp -u puppeteer.in.XXXXXXXXXX.pipe)"
 puppeteer_out="$(mktemp -u puppeteer.out.XXXXXXXXXX.pipe)"
 mkfifo "$puppeteer_in" "$puppeteer_out"
@@ -18,26 +22,20 @@ puppeteer() {
   exec 3>&-
 }
 
-shopt -s expand_aliases
-alias jq='jq --unbuffered -c'
-
 loggify_in() {
   log_in="$1"; shift
   tee "$log_in" | "$@"
 }
-
 loggify() {
   log_in="$1"; shift
   log_out="$2"; shift
   loggify_in "$log_in" "$@" | tee "$log_out"
 }
-
 if [ "${LOG_PUPPETEER:-false}" = true ]; then
   alias puppeteer='loggify /dev/stderr /dev/stderr puppeteer'
 elif [ "${LOG_PUPPETEER_IN:-false}" = true ]; then
   alias puppeteer='loggify_in /dev/stderr puppeteer'
 fi
-
 curl() {
   id="$RANDOM"
   loggify "$(mktemp autopuppeteer.curl."$id".in.XXXXXXXXXX.json)" "$(mktemp autopuppeteer.curl."$id".out.XXXXXXXXXX.json)" command curl -v "$@" 2> "$(mktemp autopuppeteer.curl."$id".err.XXXXXXXXXX.json)"
