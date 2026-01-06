@@ -36,10 +36,12 @@ if [ "${LOG_PUPPETEER:-false}" = true ]; then
 elif [ "${LOG_PUPPETEER_IN:-false}" = true ]; then
   alias puppeteer='loggify_in /dev/stderr puppeteer'
 fi
-curl() {
-  id="$RANDOM"
-  loggify "$(mktemp autopuppeteer.curl."$id".in.XXXXXXXXXX.json)" "$(mktemp autopuppeteer.curl."$id".out.XXXXXXXXXX.json)" command curl -v "$@" 2> "$(mktemp autopuppeteer.curl."$id".err.XXXXXXXXXX.json)"
-}
+if [ "${LOG_CURL:-false}" = true ]; then
+  curl() {
+    id="$RANDOM"
+    loggify "$(mktemp autopuppeteer.curl."$id".in.XXXXXXXXXX.json)" "$(mktemp autopuppeteer.curl."$id".out.XXXXXXXXXX.json)" command curl -v "$@" 2> "$(mktemp autopuppeteer.curl."$id".err.XXXXXXXXXX.json)"
+  }
+fi
 
 if [ -n "${DISPLAY:-}" ]; then
   enrich_with_screenshot() {
