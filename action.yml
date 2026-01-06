@@ -54,7 +54,7 @@ runs:
       if: failure() || cancelled()
       shell: bash
       run: |
-        jq < /tmp/autopuppeteer.conversation.*.json --unbuffered 'if .content | type == "string" then empty else .content[] end | select(.type == "image_url") | .image_url.url \
+        jq < /tmp/autopuppeteer.conversation.*.json --unbuffered 'if .content | type == "string" then empty else .content[] end | select(.type == "image_url") | .image_url.url' \
           | jq --unbufferd -s 'to_entries[] | [ .value, .key ] | @tsv' -r | cut -d , -f 2- \
           | while IFS=$'\t' read -r image index; do base64 -d <<< "$image" > /tmp/autopuppeteer.step."$index".png; done
     - name: "Upload debug logs"
