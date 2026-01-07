@@ -19,6 +19,7 @@ inputs:
   cookie:
     description: 'A valid cookie to provide context'
     default: ''
+  cache_key: 'autopuppeteer ${{ github.workflow}}-${{ github.job}}'
 outputs:
   result:
     description: 'The result value if any'
@@ -39,15 +40,10 @@ runs:
     - name: "Install puppeteer"
       shell: bash
       run: cd ${{ github.action_path }} && npm install
-    - name: "Prepare cache"
-      id: prepare-cache
-      shell: bash
-      run: |
-        echo ${{ inputs.goal }} ${{ input.url }} | md5sum | cut -d ' ' -f 1 | xargs -0 -I 'id={}' >> "$GITHUB_OUTPUT"
     - name: "Cache"
       uses: actions/cache/save@v4.0.0
       with:
-        key: 'autopuppeteer ${{ steps.prepare-cache.outputs.id }}'
+        key: ${{ inputs.cache_key }}
         path: /tmp/autopuppeteer.assistant.dynamic.js
     - name: "Start X server"
       shell: bash
