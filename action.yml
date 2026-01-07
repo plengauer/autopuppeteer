@@ -39,7 +39,17 @@ runs:
     - name: "Install puppeteer"
       shell: bash
       run: cd ${{ github.action_path }} && npm install
-    - name: "Setup X server"
+    - name: "Prepare cache"
+      id: prepare-cache
+      shell: bash
+      run: |
+        echo ${{ inputs.goal }} ${{ input.url }} | md5sum | cut -d ' ' -f 1 | xargs -0 -I 'id={}' >> "$GITHUB_OUTPUT"
+    - name: "Cache"
+      uses: actions/cache/save@v4.0.0
+      with:
+        key: 'autopuppeteer ${{ steps.prepare-cache.outputs.id }}'
+        path: /tmp/autopuppeteer.assistant.dynamic.js
+    - name: "Start X server"
       shell: bash
       run: |
         [ -n "${DISPLAY:-}" ] || (Xvfb :99 -screen 0 1280x1024x24 >&2 & sleep 5 && echo DISPLAY=:99 >> "$GITHUB_ENV")
@@ -47,7 +57,13 @@ runs:
       id: autopuppeteer
       shell: bash
       run: |
-        cd ${{ github.action_path }} 
+        if [ -r /tmp/autopuppeteer.assistant.dynamic.js ]; then
+          export GOAL="$GOAL
+        Previously, a very similar goal was achieved with the following steps (take them as inspiration, but work still incremental and verify everything on the way and ajust if necessary):
+        $(cat /tmp/autopuppeteer.assistant.dynamic.js)"
+          rm/tmp/autopuppeteer.assistant.dynamic.js
+        fi
+        cd ${{ github.action_path }}
         result_path="$(mktemp)"
         echo result_path="$result_path" >> "$GITHUB_OUTPUT"
         OTEL_SHELL_CONSERVATIVE_EXEC=TRUE LOG_PUPPETEER_IN=true bash autopuppeteer.sh \
@@ -61,6 +77,9 @@ runs:
         COOKIE: ${{ inputs.cookie }}
         LOG_PUPPETEER_IN: true
         LOG_CURL: true
+    - name: Prepare cachee
+      shell: bash
+      run: jq '.select(.role == "assistant") | .content' -r < /tmp/autopuppeteer.conversation.*.js > /tmp/autopuppeteer.assistant.dynamic.js
     - name: "Preprocess debug logs"
       if: failure() || cancelled()
       shell: bash
