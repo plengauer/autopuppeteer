@@ -19,6 +19,10 @@ inputs:
   cookie:
     description: 'A valid cookie to provide context'
     default: ''
+  vision:
+    default: true
+  resolution:
+    default: 3840x2160
   cache_key:
     description: Key for the cache
     default: 'autopuppeteer ${{ github.workflow }}-${{ github.job }}'
@@ -48,9 +52,10 @@ runs:
         key: ${{ inputs.cache_key }}
         path: /tmp/autopuppeteer.assistant.dynamic.js
     - name: "Start X server"
+      if: ${{ inputs.vision == 'true' }}
       shell: bash
       run: |
-        [ -n "${DISPLAY:-}" ] || (Xvfb :99 -screen 0 1280x1024x24 >&2 & sleep 5 && echo DISPLAY=:99 >> "$GITHUB_ENV")
+        [ -n "${DISPLAY:-}" ] || (Xvfb :99 -screen 0 ${{ inputs.resolution }}x24 >&2 & sleep 5 && echo DISPLAY=:99 >> "$GITHUB_ENV")
     - name: "DANCE FOR ME"
       id: autopuppeteer
       shell: bash
