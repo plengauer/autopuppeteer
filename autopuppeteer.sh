@@ -12,7 +12,7 @@ mkfifo "$puppeteer_in" "$puppeteer_out"
 node -e 'require("repl").start({ prompt: "", ignoreUndefined: true })' < "$puppeteer_in" &> "$puppeteer_out" & puppeteer_pid="$!"
 exec 4> "$puppeteer_in"
 exec 5< "$puppeteer_out"
-puppeteer() {
+puppeteer() { # TODO try with custom eval function to suppress the ... and | in the recoverable object and via custom eval function to avoiud the sleep 5
   stdbuf -oL sed -E 's/(\.\.\.|\|) //g' < "$puppeteer_out" & puppeteer_out_pid="$!"
   while IFS=$'\n' read -r line; do sleep 5; printf '%s\n' "$line" > "$puppeteer_in"; done # node is weird
   exec 3>&2
