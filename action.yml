@@ -19,7 +19,9 @@ inputs:
   cookie:
     description: 'A valid cookie to provide context'
     default: ''
-  cache_key: 'autopuppeteer ${{ github.workflow}}-${{ github.job}}'
+  cache_key:
+    description: Key for the cache
+    default: 'autopuppeteer ${{ github.workflow }}-${{ github.job }}'
 outputs:
   result:
     description: 'The result value if any'
