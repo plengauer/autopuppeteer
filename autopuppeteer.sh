@@ -13,7 +13,7 @@ node -e 'require("repl").start({ prompt: "", ignoreUndefined: true })' < "$puppe
 exec 4> "$puppeteer_in"
 exec 5< "$puppeteer_out"
 puppeteer() {
-  stdbuf -oL sed 's/\.\.\. //g' < "$puppeteer_out" & puppeteer_out_pid="$!"
+  stdbuf -oL sed -E 's/(\.\.\.|\|) //g' < "$puppeteer_out" & puppeteer_out_pid="$!"
   while IFS=$'\n' read -r line; do sleep 5; printf '%s\n' "$line" > "$puppeteer_in"; done # node is weird
   exec 3>&2
   exec 2> /dev/null
