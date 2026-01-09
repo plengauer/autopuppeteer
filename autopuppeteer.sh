@@ -28,7 +28,7 @@ loggify_in() {
 }
 loggify() {
   log_in="$1"; shift
-  log_out="$2"; shift
+  log_out="$1"; shift
   loggify_in "$log_in" "$@" | tee "$log_out"
 }
 if [ "${LOG_PUPPETEER:-false}" = true ]; then
