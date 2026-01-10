@@ -26,6 +26,8 @@ inputs:
   cache_key:
     description: Key for the cache
     default: 'autopuppeteer ${{ github.workflow }}-${{ github.job }}'
+  debug:
+    default: ${{ runner.debug }}
 outputs:
   result:
     description: 'The result value if any'
@@ -60,6 +62,10 @@ runs:
       id: autopuppeteer
       shell: bash
       run: |
+        if [ -n "$DEBUG" ]; then
+          export LOG_PUPPETEER_IN=true
+          export LOG_CURL=true
+        fi
         if [ -r /tmp/autopuppeteer.assistant.dynamic.js ]; then
           export GOAL="$GOAL
         Previously, a very similar goal was achieved with the following steps (take them as inspiration, but work still incremental and verify everything on the way and ajust if necessary):
@@ -78,8 +84,7 @@ runs:
         USERNAME: ${{ inputs.username }}
         PASSWORD: ${{ inputs.password }}
         COOKIE: ${{ inputs.cookie }}
-        LOG_PUPPETEER_IN: true
-        LOG_CURL: true
+        DEBUG: ${{ inputs.debug }}
     - name: Prepare cachee
       shell: bash
       run: jq 'select(.role == "assistant") | .content' -r < /tmp/autopuppeteer.conversation.*.json > /tmp/autopuppeteer.assistant.dynamic.js
