@@ -39,7 +39,7 @@ fi
 if [ "${LOG_CURL:-false}" = true ]; then
   curl() {
     id="$RANDOM"
-    loggify "$(mktemp autopuppeteer.curl."$id".in.XXXXXXXXXX.json)" "$(mktemp autopuppeteer.curl."$id".out.XXXXXXXXXX.json)" command curl -v "$@" 2> "$(mktemp autopuppeteer.curl."$id".err.XXXXXXXXXX.log)"
+    loggify "$(mktemp autopuppeteer.curl."$id".in.XXXXXXXXXX.json)" "$(mktemp autopuppeteer.curl."$id".out.XXXXXXXXXX.json)" command curl -v "$@" --fail-with-body 2> "$(mktemp autopuppeteer.curl."$id".err.XXXXXXXXXX.log)"
   }
 fi
 
