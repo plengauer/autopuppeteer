@@ -82,7 +82,7 @@ runs:
         LOG_CURL: true
     - name: Prepare cachee
       shell: bash
-      run: jq '.select(.role == "assistant") | .content' -r < /tmp/autopuppeteer.conversation.*.json > /tmp/autopuppeteer.assistant.dynamic.js
+      run: jq 'select(.role == "assistant") | .content' -r < /tmp/autopuppeteer.conversation.*.json > /tmp/autopuppeteer.assistant.dynamic.js
     - name: "Preprocess debug logs"
       if: failure() || cancelled()
       shell: bash
