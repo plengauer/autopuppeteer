@@ -27,7 +27,8 @@ inputs:
     description: Key for the cache
     default: 'autopuppeteer ${{ github.workflow }}-${{ github.job }}'
   debug:
-    default: ${{ runner.debug }}
+    default: 1
+    # ${{ runner.debug }}
 outputs:
   result:
     description: 'The result value if any'
