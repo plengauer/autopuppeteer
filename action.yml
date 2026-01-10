@@ -27,8 +27,7 @@ inputs:
     description: Key for the cache
     default: 'autopuppeteer ${{ github.workflow }}-${{ github.job }}'
   debug:
-    default: 1
-    # ${{ runner.debug }}
+    default: ${{ runner.debug }}
 outputs:
   result:
     description: 'The result value if any'
@@ -71,7 +70,7 @@ runs:
           export GOAL="$GOAL
         Previously, a very similar goal was achieved with the following steps (take them as inspiration, but work still incremental and verify everything on the way and ajust if necessary):
         $(cat /tmp/autopuppeteer.assistant.dynamic.js)"
-          rm/tmp/autopuppeteer.assistant.dynamic.js
+          rm /tmp/autopuppeteer.assistant.dynamic.js
         fi
         cd ${{ github.action_path }}
         result_path="$(mktemp)"
