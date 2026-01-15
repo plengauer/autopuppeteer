@@ -68,7 +68,7 @@ runs:
         fi
         if [ -r /tmp/autopuppeteer.assistant.dynamic.js ]; then
           export GOAL="$GOAL
-        Previously, a very similar goal was achieved with the following steps (take them as inspiration, but work still incremental and verify everything on the way and ajust if necessary):
+        Previously, a very similar goal was achieved with the following steps (take them as inspiration, but work still incremental and verify everything on the way and adjust if necessary):
         $(cat /tmp/autopuppeteer.assistant.dynamic.js)"
           rm /tmp/autopuppeteer.assistant.dynamic.js
         fi
