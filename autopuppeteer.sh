@@ -4,6 +4,7 @@ set -eu -o pipefail
 shopt -s expand_aliases
 alias mktemp='mktemp --tmpdir'
 alias jq='jq --unbuffered -c'
+\unalias exec # suppress otel instrumentation for exec if instrumented because we re doing quite some magic here ...
 
 puppeteer_in="$(mktemp -u puppeteer.in.XXXXXXXXXX.pipe)"
 puppeteer_out="$(mktemp -u puppeteer.out.XXXXXXXXXX.pipe)"
@@ -37,7 +38,7 @@ elif [ "${LOG_PUPPETEER_IN:-false}" = true ]; then
   alias puppeteer='loggify_in /dev/stderr puppeteer'
 fi
 if [ "${LOG_CURL:-false}" = true ]; then
-  curl() {
+  function curl() {
     id="$RANDOM"
     loggify "$(mktemp autopuppeteer.curl."$id".in.XXXXXXXXXX.json)" "$(mktemp autopuppeteer.curl."$id".out.XXXXXXXXXX.json)" command curl -v "$@" 2> "$(mktemp autopuppeteer.curl."$id".err.XXXXXXXXXX.log)"
   }
