@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 set -eu -o pipefail
 
 shopt -s expand_aliases
