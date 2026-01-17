@@ -5,6 +5,7 @@ set -eu -o pipefail
 shopt -s expand_aliases
 alias mktemp='mktemp --tmpdir'
 alias jq='jq --unbuffered -c'
+
 \unalias exec # suppress otel instrumentation for exec if instrumented because we re doing quite some magic here ...
 
 puppeteer_in="$(mktemp -u puppeteer.in.XXXXXXXXXX.pipe)"
@@ -15,7 +16,7 @@ node -e 'require("repl").start({ prompt: "", ignoreUndefined: true })' < "$puppe
 exec 4> "$puppeteer_in"
 exec 5< "$puppeteer_out"
 puppeteer() { # TODO try with custom eval function to suppress the ... and | in the recoverable object and via custom eval function to avoiud the sleep 5
-  stdbuf -oL sed -E 's/(\.\.\.|\|) //g' < "$puppeteer_out" & puppeteer_out_pid="$!"
+  OTEL_SHELL_CONFIG_OBSERVE_PIPES=FALSE stdbuf -oL sed -E 's/(\.\.\.|\|) //g' < "$puppeteer_out" & puppeteer_out_pid="$!"
   while IFS=$'\n' read -r line; do sleep 5; printf '%s\n' "$line" > "$puppeteer_in"; done # node is weird
   # exec 3>&2
   # exec 2> /dev/null
