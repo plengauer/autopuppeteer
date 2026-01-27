@@ -18,7 +18,7 @@ jobs:
             ${{ github.token }}
             ${{ secrets.ACTIONS_GITHUB_TOKEN }}
             ${{ secrets.OPENAI_TOKEN }}
-      - uses: plengauer/autoversion@v2.2.0
+      - uses: plengauer/autoversion@v2.3.0
         with:
           github_token: ${{ secrets.ACTIONS_GITHUB_TOKEN }}
           openai_token: ${{ secrets.OPENAI_TOKEN }} # TODO remove if no token is available
