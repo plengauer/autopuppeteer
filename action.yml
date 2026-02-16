@@ -86,6 +86,9 @@ runs:
         $(cat /tmp/autopuppeteer.assistant.dynamic.js)"
           rm /tmp/autopuppeteer.assistant.dynamic.js
         fi
+        export GUARDRAIL_STRINGS="$(printf '%s' "$PASSWORD
+        $PATTERNS
+        $GUARDRAIL_STRINGS")"
         cd ${{ github.action_path }}
         result_path="$(mktemp)"
         echo result_path="$result_path" >> "$GITHUB_OUTPUT"
@@ -97,6 +100,8 @@ runs:
         USERNAME: ${{ inputs.username }}
         PASSWORD: ${{ inputs.password }}
         COOKIE: ${{ inputs.cookie }}
+        GUARDRAIL_STRINGS: ${{ inputs.guardrail_strings }}
+        GUARDRAIL_PATTERNS: ${{ inputs.guardrail_patterns }}
         DEBUG: ${{ inputs.debug }}
     - name: Prepare cachee
       shell: bash
