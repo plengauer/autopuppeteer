@@ -23,6 +23,10 @@ inputs:
     default: true
   resolution:
     default: 3840x2160
+  guardrail_strings:
+    default: ''
+  guardrail_patterns:
+    default: ''
   cache_key:
     description: Key for the cache
     default: 'autopuppeteer ${{ github.workflow }}-${{ github.job }}'
