@@ -56,7 +56,7 @@ EOF
 "data:image/png;base64,$(base64 < "$screenshot" | tr -d '\n')"
 EOF
       rm "$screenshot"
-    } | jq -s '.[0].content = [ { "type": "text", "text": .[0].content }, { "type": "image_url", "image_url": { "url": .[1] } } ] | .[0]'
+    } | jq -s '.[0].content = [ { "type": "input_text", "text": .[0].content | (if . | type == "string" then . else .[].text end) }, { "type": "input_image_url", "image_url": .[1] } ] | .[0]'
   }
 else
   enrich_with_screenshot() {
@@ -107,14 +107,24 @@ jq << EOF -Rs '{ "role": "assistant", "content": . }' | tee -a "$conversation" |
 await page.goto('$URL', { waitUntil: 'networkidle2', });
 console.log(await page.content());
 EOF
-while ( ! jq < "$conversation" 'select(.role == "assistant") | if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end' -r | grep -F '// DONE ' > /dev/null ) && [ "$(jq < "$conversation" -s length)" -lt "${MAX_ITERATIONS:-250}" ]; do
+while ( ! jq < "$conversation" 'select(.role == "assistant") | if .content | type == "string" then .content else .content[] | select(.type == "output_text") | .text end' -r | grep -F '// DONE ' > /dev/null ) && [ "$(jq < "$conversation" -s length)" -lt "${MAX_ITERATIONS:-250}" ]; do
   if [ -n "$GUARDRAIL_STRINGS" ] && jq < "$conversation" '.content' -r | grep -qF -- "$GUARDRAIL_STRINGS"; then exit 2; fi
   if [ -n "$GUARDRAIL_PATTERNS" ] && jq < "$conversation" '.content' -r | grep -qE -- "$GUARDRAIL_PATTERNS"; then exit 3; fi
-  jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-100}"']) | .[]' | jq -s 'del(.[:-3][] | if .content | type == "string" then empty else .content[] | select(.type != "text") end) | .[]' \
-    | jq -s '{ "model": "'"${OPENAI_MODEL:-gpt-5.1}"'", "reasoning_effort": "'"${OPENAI_REASONING_EFFORT:-high}"'", "messages": . }' \
-    | curl --no-progress-meter --fail-with-body --retry 16 --max-time "$((60 * 60))" https://api.openai.com/v1/chat/completions -H "Authorization: Bearer $OPENAI_API_TOKEN" -H "Content-Type: application/json" --data-binary @- \
-    | jq '.choices[0].message | { role: .role, content: .content }' | tee -a "$conversation" \
-    | jq .content -r | ( grep -vE '^//' || true ) | puppeteer | jq -Rs '{ "role": "user", "content": . }' | enrich_with_screenshot >> "$conversation"
+  # jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-100}"']) | .[]' | jq -s 'del(.[:-3][] | if .content | type == "string" then empty else .content[] | select(.type != "text") end) | .[]' \
+  cat "$conversation" \
+    | jq -s '{ "input": ., "service_tier": "flex", "model": "'"${OPENAI_MODEL:-gpt-5.2-codex}"'", "reasoning": { "effort": "'"${OPENAI_REASONING_EFFORT:-xhigh}"'" }, tools: [ { type: "web_search", search_context_size: "high" } ] }' \
+    | if [ -n "${OPENAI_API_TOKEN:-}"; then
+      curl --no-progress-meter --fail-with-body --retry 16 --max-time "$((60 * 60))" https://api.openai.com/v1/responses -H "Authorization: Bearer $OPENAI_API_TOKEN" -H "Content-Type: application/json" --data-binary @-
+    elif [ -n "${GITHUB_TOKEN:-}"; then
+      jq '{ messages: [ .input[] | select(.type == "message") | { "role": .role, "content": (. | select(.type == "output_text" or .type == "input_text") | .text) } ], service_tier: .service_tier, model: "openai/" + .model, reasoning_effort: .reasoning.effort, response_format: .text.format }' \
+        | curl --no-progress-meter --fail --retry 4 --max-time "$((60 * 60))" https://models.github.ai/inference/chat/completions -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" -d @- \
+        | jq '.choices[0].message | { output: [ { type: "message", "role": .role, content: [ { type: "output_text", text: .content } ] } ] }'
+    else
+      echo '{ "output": [ { "role": "assistant", "content": [ { "type": "output_text", text: "// DONE FAILURE (token)" } ] } ] }'
+    fi | jq '.output[]' | tee -a "$conversation" \
+    | jq '.content[] | select(.type == "output_text") | .text' -r \
+    | ( grep -vE '^//' || true ) | puppeteer \
+    | jq -Rs '{ "role": "user", "content": [ { "type": "input_text", "text": . } ] }' | enrich_with_screenshot >> "$conversation"
 done
 jq < "$conversation" 'select(.role == "assistant") | if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end' -r | grep -F '// DONE SUCCESS' > /dev/null || exit_code=1
 if [ "$exit_code" = 0 ]; then jq < "$conversation" -s '.[-1] | if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end' -r; fi
