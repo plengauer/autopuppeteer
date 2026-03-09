@@ -7,11 +7,9 @@ on:
       - Autorerun
       - Autoversion
       - CI
-      - Claude
       - CodeQL
       - Copilot code review
       - Copilot coding agent
-      - OpenAI Codex
       - Renovate
     types:
       - completed
