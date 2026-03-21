@@ -111,13 +111,12 @@ while ( ! jq < "$conversation" 'select(.type == "message") | select(.role == "as
   if [ -n "${GUARDRAIL_STRINGS:-}" ] && jq < "$conversation" '.content' -r | grep -qF -- "$GUARDRAIL_STRINGS"; then exit 2; fi
   if [ -n "${GUARDRAIL_PATTERNS:-}" ] && jq < "$conversation" '.content' -r | grep -qE -- "$GUARDRAIL_PATTERNS"; then exit 3; fi
   cat "$conversation" | \jq . >&2
-  # jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-100}"']) | .[]' \
-  cat < "$conversation" \
+  jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-100}"']) | .[]' \
     | jq -s '{ "input": ., "service_tier": "flex", "model": "'"${OPENAI_MODEL:-gpt-5.2-codex}"'", "reasoning": { "effort": "'"${OPENAI_REASONING_EFFORT:-xhigh}"'" }, tools: [ { type: "web_search", search_context_size: "high" } ] }' \
     | if [ -n "${OPENAI_API_TOKEN:-}" ]; then
       tee /dev/stderr | curl --no-progress-meter --fail-with-body --retry 16 --max-time "$((60 * 60))" https://api.openai.com/v1/responses -H "Authorization: Bearer $OPENAI_API_TOKEN" -H "Content-Type: application/json" --data-binary @- | tee /dev/stderr
     elif [ -n "${GITHUB_TOKEN:-}" ]; then
-      jq '{ messages: [ .input[] | select(.type == "message") | { "role": .role, "content": (if .content | type == "string" then .content else (.content[] | select(.type == "output_text" or .type == "input_text") | .text) end) } ], service_tier: .service_tier, model: "openai/" + .model, reasoning_effort: .reasoning.effort, response_format: .text.format }' \
+      jq '{ messages: [ .input[] | select(.type == "message") | { "role": .role, "content": (if .content | type == "string" then .content else [ .content[] | if .type == "input_text" then { "type": "text", "text": .text } elif .type == "input_image" then { "type": "image", "image_url": { "url": .image_url } } else .type end ] end) } ], service_tier: .service_tier, model: "openai/" + .model, reasoning_effort: .reasoning.effort, response_format: .text.format }' \
         | tee /dev/stderr | curl --no-progress-meter --fail --retry 4 --max-time "$((60 * 60))" https://models.github.ai/inference/chat/completions -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" -d @- | tee /dev/stderr \
         | jq '.choices[0].message | { output: [ { "type": "message", "role": .role, content: [ { type: "output_text", text: .content } ] } ] }'
     else
