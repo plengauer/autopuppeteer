@@ -117,11 +117,12 @@ while ( ! jq < "$conversation" 'select(.type == "message") | select(.role == "as
     | if [ -n "${OPENAI_API_TOKEN:-}" ]; then
       tee /dev/stderr | curl --no-progress-meter --fail-with-body --retry 16 --max-time "$((60 * 60))" https://api.openai.com/v1/responses -H "Authorization: Bearer $OPENAI_API_TOKEN" -H "Content-Type: application/json" --data-binary @- | tee /dev/stderr
     elif [ -n "${GITHUB_TOKEN:-}" ]; then
-      jq '{ messages: [ .input[] | select(.type == "message") | { "role": .role, "content": (. | select(.type == "output_text" or .type == "input_text") | .text) } ], service_tier: .service_tier, model: "openai/" + .model, reasoning_effort: .reasoning.effort, response_format: .text.format }' \
+      jq '{ messages: [ .input[] | select(.type == "message") | { "role": .role, "content": (if .content | type == "string" then .content else (.content[] | select(.type == "output_text" or .type == "input_text") | .text) end) } ], service_tier: .service_tier, model: "openai/" + .model, reasoning_effort: .reasoning.effort, response_format: .text.format }' \
         | tee /dev/stderr | curl --no-progress-meter --fail --retry 4 --max-time "$((60 * 60))" https://models.github.ai/inference/chat/completions -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" -d @- | tee /dev/stderr \
         | jq '.choices[0].message | { output: [ { "type": "message", "role": .role, content: [ { type: "output_text", text: .content } ] } ] }'
     else
-      echo '{ "output": [ { "type": "message", "role": "assistant", "content": [ { "type": "output_text", "text": "// DONE FAILURE (token)" } ] } ] }'
+      cat > /dev/null
+      echo '{ "output": [ { "type": "message", "role": "assistant", "content": [ { "type": "output_text", "text": "// DONE FAILURE (missing token)" } ] } ] }'
     fi | jq '.output[]' | tee -a "$conversation" \
     | jq 'select(.type == "message") | .content[] | select(.type == "output_text") | .text' -r \
     | ( grep -vE '^//' || true ) | puppeteer \
