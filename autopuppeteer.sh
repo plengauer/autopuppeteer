@@ -45,7 +45,7 @@ if [ "${LOG_CURL:-false}" = true ]; then
   }
 fi
 
-if [ -n "${DISPLAY:-}" ] && false; then
+if [ -n "${DISPLAY:-}" ]; then
   enrich_with_screenshot() {
     {
       cat
