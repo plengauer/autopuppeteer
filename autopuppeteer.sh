@@ -45,7 +45,7 @@ if [ "${LOG_CURL:-false}" = true ]; then
   }
 fi
 
-if [ -n "${DISPLAY:-}" ]; then
+if [ -n "${DISPLAY:-}" ] && false; then
   enrich_with_screenshot() {
     {
       cat
@@ -105,7 +105,7 @@ EOF
 intro_count="$(jq < "$conversation" -s length)"
 jq << EOF -Rs '{ "type": "message", "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "type": "message", "role": "user", "content": . }' | enrich_with_screenshot >> "$conversation"
 await page.goto('$URL', { waitUntil: 'networkidle2', });
-console.log(await page.content());
+// console.log(await page.content());
 EOF
 while ( ! jq < "$conversation" 'select(.type == "message") | select(.role == "assistant") | if .content | type == "string" then .content else .content[] | select(.type == "output_text") | .text end' -r | grep -F '// DONE ' > /dev/null ) && [ "$(jq < "$conversation" -s length)" -lt "${MAX_ITERATIONS:-250}" ]; do
   if [ -n "${GUARDRAIL_STRINGS:-}" ] && jq < "$conversation" '.content' -r | grep -qF -- "$GUARDRAIL_STRINGS"; then exit 2; fi
