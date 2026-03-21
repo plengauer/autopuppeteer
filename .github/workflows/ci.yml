@@ -22,7 +22,7 @@ jobs:
           secrets_to_redact: ${{ github.token }}
       - uses: actions/checkout@v6
       - id: autopuppeteer
-        uses: ./action
+        uses: ./
         with:
           goal: find the date the english wiki page about giraffes has been last modified
           url: https://www.wikipedia.org/
