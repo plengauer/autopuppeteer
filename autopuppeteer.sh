@@ -45,7 +45,7 @@ if [ "${LOG_CURL:-false}" = true ]; then
   }
 fi
 
-if [ -n "${DISPLAY:-}" ] && false; then
+if [ -n "${DISPLAY:-}" ]; then
   enrich_with_screenshot() {
     {
       cat
@@ -86,16 +86,16 @@ Your goal is to $GOAL.
 ${HINT:-}
 EOF
 if [ "${USE_STEALTH:-false}" = true ]; then
-  jq << EOF -Rs '{ "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "role": "user", "content": . }' >> "$conversation"
+  jq << EOF -Rs '{ "type": "message", "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "type": "message", "role": "user", "content": . }' >> "$conversation"
 const puppeteer = require('puppeteer-extra');
 puppeteer.use(require('puppeteer-extra-plugin-stealth')());
 EOF
 else
-  jq << EOF -Rs '{ "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "role": "user", "content": . }' >> "$conversation"
+  jq << EOF -Rs '{ "type": "message", "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "type": "message", "role": "user", "content": . }' >> "$conversation"
 const puppeteer = require('puppeteer');
 EOF
 fi
-jq << EOF -Rs '{ "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "role": "user", "content": . }' >> "$conversation"
+jq << EOF -Rs '{ "type": "message", "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "type": "message", "role": "user", "content": . }' >> "$conversation"
 const browser = await puppeteer.launch({ headless: $([ -n "${DISPLAY:-}" ] && echo false || echo true), defaultViewport: null, args: [ '--no-sandbox', '--disable-setuid-sandbox', $([ -z "${DISPLAY:-}" ] || echo "'--start-maximized'") ] });
 const page = await browser.newPage();
 EOF
@@ -103,7 +103,7 @@ puppeteer << EOF &> /dev/null
 if (__COOKIE__) { await page.setExtraHTTPHeaders({ Cookie: __COOKIE__ }); }
 EOF
 intro_count="$(jq < "$conversation" -s length)"
-jq << EOF -Rs '{ "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "role": "user", "content": . }' | enrich_with_screenshot >> "$conversation"
+jq << EOF -Rs '{ "type": "message", "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "type": "message", "role": "user", "content": . }' | enrich_with_screenshot >> "$conversation"
 await page.goto('$URL', { waitUntil: 'networkidle2', });
 console.log(await page.content());
 EOF
@@ -111,7 +111,8 @@ while ( ! jq < "$conversation" 'select(.type == "message") | select(.role == "as
   if [ -n "${GUARDRAIL_STRINGS:-}" ] && jq < "$conversation" '.content' -r | grep -qF -- "$GUARDRAIL_STRINGS"; then exit 2; fi
   if [ -n "${GUARDRAIL_PATTERNS:-}" ] && jq < "$conversation" '.content' -r | grep -qE -- "$GUARDRAIL_PATTERNS"; then exit 3; fi
   cat "$conversation" | \jq . >&2
-  jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-100}"']) | .[]' \
+  # jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-100}"']) | .[]' \
+  cat < "$conversation" \
     | jq -s '{ "input": ., "service_tier": "flex", "model": "'"${OPENAI_MODEL:-gpt-5.2-codex}"'", "reasoning": { "effort": "'"${OPENAI_REASONING_EFFORT:-xhigh}"'" }, tools: [ { type: "web_search", search_context_size: "high" } ] }' \
     | if [ -n "${OPENAI_API_TOKEN:-}" ]; then
       tee /dev/stderr | curl --no-progress-meter --fail-with-body --retry 16 --max-time "$((60 * 60))" https://api.openai.com/v1/responses -H "Authorization: Bearer $OPENAI_API_TOKEN" -H "Content-Type: application/json" --data-binary @- | tee /dev/stderr
