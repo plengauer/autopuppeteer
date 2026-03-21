@@ -12,11 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      actions: read
+      models: read
     steps:
       - uses: actions/checkout@v6
       - id: autopuppeteer
         uses: ./
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           goal: find the date the english wiki page about giraffes has been last modified
           url: https://www.wikipedia.org/
