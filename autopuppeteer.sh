@@ -126,8 +126,8 @@ while ( ! jq < "$conversation" 'select(.type == "message") | select(.role == "as
     | tee /dev/stderr | ( grep -vE '^//' || true ) | puppeteer \
     | jq -Rs '{ "role": "user", "content": [ { "type": "input_text", "text": . } ] }' | enrich_with_screenshot >> "$conversation"
 done
-jq < "$conversation" 'select(.role == "assistant") | if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end' -r | grep -F '// DONE SUCCESS' > /dev/null || exit_code=1
-if [ "$exit_code" = 0 ]; then jq < "$conversation" -s '.[-1] | if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end' -r; fi
+jq < "$conversation" 'select(.role == "assistant") | if .content | type == "string" then .content else .content[] | select(.type == "output_text") | .text end' -r | grep -qF '// DONE SUCCESS' || exit_code=1
+if [ "$exit_code" = 0 ]; then jq < "$conversation" -s '.[-1] | if .content | type == "string" then .content else .content[] | select(.type == "input_text") | .text end' -r; fi
 jq << EOF -Rs '{ "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "role": "user", "content": . }' >> "$conversation"
 await browser.close();
 // process.exit(0);
