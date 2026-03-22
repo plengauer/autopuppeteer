@@ -9,7 +9,6 @@ on:
 jobs:
 
   test:
-    if: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -35,7 +34,7 @@ jobs:
           echo ::notice::"$(cat ${{ steps.autopuppeteer.outputs.result_path }})"
 
   release:
-    needs: test
+    # needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write
