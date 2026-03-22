@@ -123,7 +123,7 @@ while ( ! jq < "$conversation" 'select(.type == "message") | select(.role == "as
       echo '{ "output": [ { "type": "message", "role": "assistant", "content": [ { "type": "output_text", "text": "// DONE FAILURE (missing token)" } ] } ] }'
     fi | jq '.output[]' | tee -a "$conversation" \
     | jq 'select(.type == "message") | .content[] | select(.type == "output_text") | .text' -r \
-    | ( grep -vE '^//' || true ) | puppeteer \
+    | tee /dev/stderr | ( grep -vE '^//' || true ) | puppeteer \
     | jq -Rs '{ "role": "user", "content": [ { "type": "input_text", "text": . } ] }' | enrich_with_screenshot >> "$conversation"
 done
 jq < "$conversation" 'select(.role == "assistant") | if .content | type == "string" then .content else .content[] | select(.type == "text") | .text end' -r | grep -F '// DONE SUCCESS' > /dev/null || exit_code=1
