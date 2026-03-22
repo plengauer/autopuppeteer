@@ -3,8 +3,8 @@ name: CI
 on:
   push:
     branches: main
-    paths:
-      - 'VERSION'
+    # paths:
+    #   - 'VERSION'
 
 jobs:
 
@@ -29,12 +29,13 @@ jobs:
         with:
           goal: find the date the english wiki page about giraffes has been last modified
           url: https://www.wikipedia.org/
+          openai_api_token: ${{ secrets.OPENAI_TOKEN }}
       - run: |
           echo ::notice::"${{ steps.autopuppeteer.outputs.result }}"
           echo ::notice::"$(cat ${{ steps.autopuppeteer.outputs.result_path }})"
 
   release:
-    # needs: test
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write
