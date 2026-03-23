@@ -16,7 +16,7 @@ exec 4> "$puppeteer_in"
 exec 5< "$puppeteer_out"
 puppeteer() { # TODO try with custom eval function to suppress the ... and | in the recoverable object and via custom eval function to avoiud the sleep 5
   \stdbuf -oL sed -E 's/(\.\.\.|\|) //g' < "$puppeteer_out" & puppeteer_out_pid="$!"
-  while IFS=$'\n' read -r line; do sleep 15; printf '%s\n' "$line" > "$puppeteer_in"; done # node is weird
+  tr '\n' '§' | sed -E 's/§(\)|\}|\]| )/\1/g' | tr '§' '\n' | while IFS=$'\n' read -r line; do sleep 15; printf '%s\n' "$line" > "$puppeteer_in"; done # node is weird
   # exec 3>&2
   # exec 2> /dev/null
   sleep 15 && kill -9 "$puppeteer_out_pid" && { wait "$puppeteer_out_pid" || true; }
