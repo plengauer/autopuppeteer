@@ -16,11 +16,11 @@ require("repl").start({
   ignoreUndefined: true,
   eval: (code, context, replResourceName, callback) => {
     try {
-      callback(null, eval(code));
+      return callback(null, eval(code));
     } catch (error) {
-      callback(error);
+      return callback(error);
     } finally {
-      require("fs").writeFileSync("/tmp/autopuppeteer.repl");
+      require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
     }
   }
 })
@@ -30,7 +30,12 @@ exec 5< "$puppeteer_out"
 puppeteer() {
   \stdbuf -oL sed -E 's/(\.\.\.|\|) //g' < "$puppeteer_out" & puppeteer_out_pid="$!"
   rm -rf /tmp/autopuppeteer.repl
-  tr '\n' '§' | sed -E 's/§(\)|\}|\]| )/\1/g' | tr '§' '\n' | while IFS=$'\n' read -r line; do printf '%s\n' "$line" > "$puppeteer_in"; while ! [ -r /tmp/autopuppeteer.repl ]; do sleep 0.1; done; rm -rf /tmp/autopuppeteer.repl; done # node is weird
+  if true; then
+    grep -vE '^//' | tr '\n' ' ' > "$puppeteer_in"
+    while ! [ -r /tmp/autopuppeteer.repl ]; do sleep 0.1; done
+  else
+    tr '\n' '§' | sed -E 's/§(\)|\}|\]| )/\1/g' | tr '§' '\n' | while IFS=$'\n' read -r line; do printf '%s\n' "$line" > "$puppeteer_in"; while ! [ -r /tmp/autopuppeteer.repl ]; do sleep 0.1; done; rm -rf /tmp/autopuppeteer.repl; done # node is weird
+  fi
   sleep 1 # make sure all data made it through
   exec 3>&2
   exec 2> /dev/null
@@ -87,7 +92,7 @@ EOF
 exit_code=0
 conversation="$(mktemp autopuppeteer.conversation.XXXXXXXXXX.json)"
 jq << EOF -Rs '{ "type": "message", "role": "developer", "content": . }' >> "$conversation"
-You are dynamically writing node.js code using puppeteer to achieve a given goal on a website. All output must be plain valid node.js code, no markdown or similar. You can add comments for additional context.
+You are dynamically writing node.js code using puppeteer to achieve a given goal on a website. All output must be plain valid node.js code, no markdown or similar. You can add comments for additional context, but never use multi-line comments.
 Every message from the user will be the stdout and stderr of your own code from your last response, and optionally a screenshot of the current state. All code you write is incremental running in the same node REPL after your last code.
 Think incrementally. Always plan more than one step ahead and include an output (like the entire DOM if necessary, or whether individual elements are present) that will inform the next step. Include your bigger plan as well as brief description of the current state and your conclusions in comments. If necessary adjust your plan based on the last output. Include reasoning about your conclusions and explain explicitly how the plan is adjusted.
 Write minimal code, and make small steps with very few instructions at a time and reexamine the current state. Dont write entire scripts achieving all at once.
@@ -138,7 +143,7 @@ while ( ! jq < "$conversation" 'select(.type == "message") | select(.role == "as
       echo '{ "output": [ { "type": "message", "role": "assistant", "content": [ { "type": "output_text", "text": "// DONE FAILURE (missing token)" } ] } ] }'
     fi | jq '.output[]' | tee -a "$conversation" \
     | jq 'select(.type == "message") | .content[] | select(.type == "output_text") | .text' -r \
-    | ( grep -vE '^//' || true ) | puppeteer \
+    | puppeteer \
     | jq -Rs '{ "type": "message", "role": "user", "content": [ { "type": "input_text", "text": . } ] }' | enrich_with_screenshot >> "$conversation"
 done
 jq < "$conversation" 'select(.role == "assistant") | if .content | type == "string" then .content else .content[] | select(.type == "output_text") | .text end' -r | grep -qF '// DONE SUCCESS' || exit_code=1
