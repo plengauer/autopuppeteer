@@ -28,6 +28,18 @@ jobs:
       - run: |
           echo ::notice::"${{ steps.autopuppeteer.outputs.result }}"
           echo ::notice::"$(cat ${{ steps.autopuppeteer.outputs.result_path }})"
+      - run: |
+          [ "${{ steps.autopuppeteer.outputs.result }}" = "$(cat ${{ steps.autopuppeteer.outputs.result_path }})" ]
+      - run: |
+          day="$(cat ${{ steps.autopuppeteer.outputs.result_path }} | cut -d ' ' -f 1)"
+          month="$(cat ${{ steps.autopuppeteer.outputs.result_path }} | cut -d ' ' -f 2)"
+          year="$(cat ${{ steps.autopuppeteer.outputs.result_path }} | cut -d ' ' -f 3)"
+          [ "$day" -ge 1 ] && [ "$day" -le 31 ] || exit 1
+          case "$month" in
+            January|February|March|April|May|June|July|August|September|October|November|December) :;;
+            *) exit 2;;
+          esac
+          [ "$year" -ge 2026 ] && [ "$year" -lt "$(date +%Y)" ] || exit 3
 
   release:
     needs: test
