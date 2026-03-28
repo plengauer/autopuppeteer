@@ -5,18 +5,33 @@ shopt -s expand_aliases
 alias mktemp='mktemp --tmpdir'
 alias jq='jq --unbuffered -c'
 
-\unalias exec || true # suppress otel instrumentation for exec if instrumented because we re doing quite some magic here ...
+\unalias exec 2> /dev/null || true # suppress otel instrumentation for exec if instrumented because we re doing quite some magic here ...
 
 puppeteer_in="$(mktemp -u puppeteer.in.XXXXXXXXXX.pipe)"
 puppeteer_out="$(mktemp -u puppeteer.out.XXXXXXXXXX.pipe)"
 mkfifo "$puppeteer_in" "$puppeteer_out"
-# script -q -c node /dev/null < "$in" &> "$out" & puppeteer_pid="$!"
-node -e 'require("repl").start({ prompt: "", ignoreUndefined: true })' < "$puppeteer_in" &> "$puppeteer_out" & puppeteer_pid="$!"
+node -e '
+require("repl").start({
+  prompt: "",
+  ignoreUndefined: true,
+  eval: (code, context, replResourceName, callback) => {
+    try {
+      callback(null, eval(code));
+    } catch (error) {
+      callback(error);
+    } finally {
+      require("fs").writeFileSync("/tmp/autopuppeteer.repl");
+    }
+  }
+})
+' < "$puppeteer_in" &> "$puppeteer_out" & puppeteer_pid="$!"
 exec 4> "$puppeteer_in"
 exec 5< "$puppeteer_out"
-puppeteer() { # TODO try with custom eval function to suppress the ... and | in the recoverable object and via custom eval function to avoiud the sleep 5
+puppeteer() {
   \stdbuf -oL sed -E 's/(\.\.\.|\|) //g' < "$puppeteer_out" & puppeteer_out_pid="$!"
-  tr '\n' '§' | sed -E 's/§(\)|\}|\]| )/\1/g' | tr '§' '\n' | while IFS=$'\n' read -r line; do sleep 15; printf '%s\n' "$line" > "$puppeteer_in"; done # node is weird
+  rm -rf /tmp/autopuppeteer.repl
+  tr '\n' '§' | sed -E 's/§(\)|\}|\]| )/\1/g' | tr '§' '\n' | while IFS=$'\n' read -r line; do printf '%s\n' "$line" > "$puppeteer_in"; while ! [ -r /tmp/autopuppeteer.repl ]; do sleep 0.1; done; rm -rf /tmp/autopuppeteer.repl; done # node is weird
+  sleep 1 # make sure all data made it through
   exec 3>&2
   exec 2> /dev/null
   sleep 15 && kill -9 "$puppeteer_out_pid" && { wait "$puppeteer_out_pid" || true; }
