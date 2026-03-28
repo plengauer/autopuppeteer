@@ -11,14 +11,26 @@ puppeteer_in="$(mktemp -u puppeteer.in.XXXXXXXXXX.pipe)"
 puppeteer_out="$(mktemp -u puppeteer.out.XXXXXXXXXX.pipe)"
 mkfifo "$puppeteer_in" "$puppeteer_out"
 node -e '
-require("repl").start({
+const repl = require("repl");
+const vm = require("vm");
+repl.start({
   prompt: "",
   ignoreUndefined: true,
-  eval: (code, context, replResourceName, callback) => {
+  eval: async (code, context, replResourceName, callback) => {
     try {
-      return callback(null, eval(code));
+      let result;
+      try {
+        result = vm.runInContext(code, context, { filename: replResourceName });
+      } catch (error) {
+        if (error.name === "SyntaxError" && /^(Unexpected end of input|Unexpected token)/.test(error.message)) {
+          return callback(new repl.Recoverable(error));
+        } else {
+          throw error;
+        }
+      }
+      callback(null, await result);
     } catch (error) {
-      return callback(error);
+      callback(error);
     } finally {
       require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
     }
