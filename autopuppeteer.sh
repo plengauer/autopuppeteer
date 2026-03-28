@@ -28,7 +28,6 @@ require("repl").start({
 exec 4> "$puppeteer_in"
 exec 5< "$puppeteer_out"
 puppeteer() {
-  set -x
   \stdbuf -oL sed -E 's/(\.\.\.|\|) //g' < "$puppeteer_out" & puppeteer_out_pid="$!"
   rm -rf /tmp/autopuppeteer.repl
   if true; then
