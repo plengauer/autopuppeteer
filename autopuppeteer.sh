@@ -31,7 +31,7 @@ puppeteer() {
   \stdbuf -oL sed -E 's/(\.\.\.|\|) //g' < "$puppeteer_out" & puppeteer_out_pid="$!"
   rm -rf /tmp/autopuppeteer.repl
   if true; then
-    grep -vE '^//' | tr '\n' ' ' > "$puppeteer_in"
+    ( grep -vE '^//' || true ) | tr '\n' ' ' > "$puppeteer_in"
     while ! [ -r /tmp/autopuppeteer.repl ]; do sleep 0.1; done
   else
     tr '\n' '§' | sed -E 's/§(\)|\}|\]| )/\1/g' | tr '§' '\n' | while IFS=$'\n' read -r line; do printf '%s\n' "$line" > "$puppeteer_in"; while ! [ -r /tmp/autopuppeteer.repl ]; do sleep 0.1; done; rm -rf /tmp/autopuppeteer.repl; done # node is weird
