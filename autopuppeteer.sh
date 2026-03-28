@@ -1,5 +1,6 @@
 #!/bin/bash
 set -eu -o pipefail
+set -x
 
 shopt -s expand_aliases
 alias mktemp='mktemp --tmpdir'
