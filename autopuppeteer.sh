@@ -15,15 +15,13 @@ const repl = require("repl").start({ prompt: "", ignoreUndefined: true });
 const eval = repl.eval;
 repl.eval = function (code, context, replResourceName, callback) {
   try {
-    let result = eval.call(this, code, context, replResourceName, (error, result) => {
+    return eval.call(this, code, context, replResourceName, (error, result) => {
       try {
         return callback(error, result);
       } finally {
         require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
       }
     });
-    console.log(result);
-    return result;
   } catch (error) {
     require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
     throw error;
@@ -37,8 +35,8 @@ exec 4> "$puppeteer_in"
 exec 5< "$puppeteer_out"
 puppeteer() {
   \stdbuf -oL sed -E 's/(\.\.\.|\|) //g' < "$puppeteer_out" & puppeteer_out_pid="$!"
-  rm -rf /tmp/autopuppeteer.repl
-  ( grep -vE '^//' || true ) | while IFS=$'\n' read -r line; do printf '%s\n' "$line" > "$puppeteer_in"; while ! [ -r /tmp/autopuppeteer.repl ]; do sleep 1; done; rm -rf /tmp/autopuppeteer.repl; done # node is weird
+  local i=15
+  ( grep -vE '^//' || true ) | while IFS=$'\n' read -r line; do rm -rf /tmp/autopuppeteer.repl; printf '%s\n' "$line" > "$puppeteer_in"; while ! [ -r /tmp/autopuppeteer.repl ] && [ "$i" -gt 0 ]; do sleep 1; local i=$((i - 1)); done; done # node is weird
   exec 3>&2
   exec 2> /dev/null
   sleep 1 && kill -9 "$puppeteer_out_pid" && { wait "$puppeteer_out_pid" || true; }
