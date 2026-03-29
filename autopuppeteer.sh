@@ -10,79 +10,31 @@ alias jq='jq --unbuffered -c'
 puppeteer_in="$(mktemp -u puppeteer.in.XXXXXXXXXX.pipe)"
 puppeteer_out="$(mktemp -u puppeteer.out.XXXXXXXXXX.pipe)"
 mkfifo "$puppeteer_in" "$puppeteer_out"
-if false; then
-  node -e '
-  const repl = require("repl");
-  const vm = require("vm");
-  repl.start({
-    prompt: "",
-    ignoreUndefined: true,
-    eval: async (code, context, replResourceName, callback) => {
-      try {
-        let result;
-        try {
-          result = vm.runInContext(code, context, { filename: replResourceName });
-        } catch (error) {
-          if (error.name === "SyntaxError" && /^(Unexpected end of input|Unexpected token)/.test(error.message)) {
-            return callback(new repl.Recoverable(error));
-          } else {
-            throw error;
-          }
-        }
-        return callback(null, await result);
-      } catch (error) {
-        return callback(error);
-      } finally {
-        require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
-      }
+node -e '
+const repl = require("repl").start({ prompt: "", ignoreUndefined: true });
+const eval = repl.eval;
+repl.eval = function (code, context, replResourceName, callback) {
+  return eval.call(this, code, context, replResourceName, (err, result) => {
+    try {
+      return callback(err, result);
+    } finally {
+      require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
     }
-  })
-  ' < "$puppeteer_in" &> "$puppeteer_out" & puppeteer_pid="$!"
-  exec 4> "$puppeteer_in"
-  exec 5< "$puppeteer_out"
-  puppeteer() {
-    \stdbuf -oL sed -E 's/(\.\.\.|\|) //g' < "$puppeteer_out" & puppeteer_out_pid="$!"
-    rm -rf /tmp/autopuppeteer.repl
-    ( grep -vE '^//' || true ) | if true; then
-      { tr '\n' ' '; echo; } > "$puppeteer_in"
-      while ! [ -r /tmp/autopuppeteer.repl ]; do sleep 0.1; done
-    else
-      tr '\n' '§' | sed -E 's/§(\)|\}|\]| )/\1/g' | tr '§' '\n' | while IFS=$'\n' read -r line; do printf '%s\n' "$line" > "$puppeteer_in"; while ! [ -r /tmp/autopuppeteer.repl ]; do sleep 0.1; done; rm -rf /tmp/autopuppeteer.repl; done # node is weird
-    fi
-    sleep 1 # make sure all data made it through
-    exec 3>&2
-    exec 2> /dev/null
-    sleep 15 && kill -9 "$puppeteer_out_pid" && { wait "$puppeteer_out_pid" || true; }
-    exec 2>&3
-    exec 3>&-
-  }
-else
-  node -e '
-  const repl = require("repl").start({ prompt: "", ignoreUndefined: true });
-  const eval = repl.eval;
-  repl.eval = function (code, context, replResourceName, callback) => {
-    return eval.call(code, context, replResourceName, (err, result) => {
-      try {
-        return callback(err, result);
-      } finally {
-        require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
-      }
-    });
-  };
-  ' < "$puppeteer_in" &> "$puppeteer_out" & puppeteer_pid="$!"
-  exec 4> "$puppeteer_in"
-  exec 5< "$puppeteer_out"
-  puppeteer() {
-    \stdbuf -oL sed -E 's/(\.\.\.|\|) //g' < "$puppeteer_out" & puppeteer_out_pid="$!"
-    rm -rf /tmp/autopuppeteer.repl
-    ( grep -vE '^//' || true ) | while IFS=$'\n' read -r line; do printf '%s\n' "$line" > "$puppeteer_in"; while ! [ -r /tmp/autopuppeteer.repl ]; do sleep 0.1; done; rm -rf /tmp/autopuppeteer.repl; done # node is weird
-    exec 3>&2
-    exec 2> /dev/null
-    sleep 1 && kill -9 "$puppeteer_out_pid" && { wait "$puppeteer_out_pid" || true; }
-    exec 2>&3
-    exec 3>&-
-  }
-fi
+  });
+};
+' < "$puppeteer_in" &> "$puppeteer_out" & puppeteer_pid="$!"
+exec 4> "$puppeteer_in"
+exec 5< "$puppeteer_out"
+puppeteer() {
+  \stdbuf -oL sed -E 's/(\.\.\.|\|) //g' < "$puppeteer_out" & puppeteer_out_pid="$!"
+  rm -rf /tmp/autopuppeteer.repl
+  ( grep -vE '^//' || true ) | while IFS=$'\n' read -r line; do printf '%s\n' "$line" > "$puppeteer_in"; while ! [ -r /tmp/autopuppeteer.repl ]; do sleep 0.1; done; rm -rf /tmp/autopuppeteer.repl; done # node is weird
+  exec 3>&2
+  exec 2> /dev/null
+  sleep 1 && kill -9 "$puppeteer_out_pid" && { wait "$puppeteer_out_pid" || true; }
+  exec 2>&3
+  exec 3>&-
+}
 
 loggify_in() {
   log_in="$1"; shift
