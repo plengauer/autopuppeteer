@@ -14,13 +14,18 @@ node -e '
 const repl = require("repl").start({ prompt: "", ignoreUndefined: true });
 const eval = repl.eval;
 repl.eval = function (code, context, replResourceName, callback) {
-  return eval.call(this, code, context, replResourceName, (err, result) => {
-    try {
-      return callback(err, result);
-    } finally {
-      require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
-    }
-  });
+  try {
+    return eval.call(this, code, context, replResourceName, (err, result) => {
+      try {
+        return callback(err, result);
+      } finally {
+        require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
+      }
+    });
+  } catch (error) {
+    require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
+    throw error;
+  }
 };
 ' < "$puppeteer_in" &> "$puppeteer_out" & puppeteer_pid="$!"
 exec 4> "$puppeteer_in"
