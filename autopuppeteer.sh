@@ -34,9 +34,10 @@ repl.on("error", (error) => {
 exec 4> "$puppeteer_in"
 exec 5< "$puppeteer_out"
 puppeteer() {
+  set -x
   \stdbuf -oL sed -E 's/(\.\.\.|\|) //g' < "$puppeteer_out" & puppeteer_out_pid="$!"
   rm -rf /tmp/autopuppeteer.repl
-  ( grep -vE '^//' || true ) | while IFS=$'\n' read -r line; do printf '%s\n' "$line" > "$puppeteer_in"; while ! [ -r /tmp/autopuppeteer.repl ]; do sleep 0.1; done; rm -rf /tmp/autopuppeteer.repl; done # node is weird
+  ( grep -vE '^//' || true ) | while IFS=$'\n' read -r line; do printf '%s\n' "$line" > "$puppeteer_in"; while ! [ -r /tmp/autopuppeteer.repl ]; do sleep 1; done; rm -rf /tmp/autopuppeteer.repl; done # node is weird
   exec 3>&2
   exec 2> /dev/null
   sleep 1 && kill -9 "$puppeteer_out_pid" && { wait "$puppeteer_out_pid" || true; }
