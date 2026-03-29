@@ -84,6 +84,11 @@ else
   }
 fi
 
+puppeteer | tee /dev/stderr << EOF
+foo = { bar: "hello world" }
+await foo.bar();
+EOF
+
 puppeteer << EOF &> /dev/null
 const __USERNAME__ = '$USERNAME';
 const __PASSWORD__ = '$PASSWORD';
