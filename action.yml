@@ -105,13 +105,13 @@ runs:
         DEBUG: ${{ inputs.debug }}
     - name: Prepare cachee
       shell: bash
-      run: jq 'select(.role == "assistant") | .content' -r < /tmp/autopuppeteer.conversation.*.json > /tmp/autopuppeteer.assistant.dynamic.js
+      run: jq < /tmp/autopuppeteer.conversation.*.json 'select(.type == "message" and .role == "assistant") | ( if .content | type == "string" then .content else ( .content[] | select(.type == "output_text") | .text ) end )' -r > /tmp/autopuppeteer.assistant.dynamic.js
     - name: "Preprocess debug logs"
       if: failure()
       shell: bash
       run: |
-        jq < /tmp/autopuppeteer.conversation.*.json --unbuffered 'if .content | type == "string" then empty else .content[] end | select(.type == "image_url") | .image_url.url' \
-          | jq --unbuffered -s 'to_entries[] | [ .value, .key ] | @tsv' -r | cut -d , -f 2- \
+        jq < /tmp/autopuppeteer.conversation.*.json 'select(.type == "message" and .role == "user") | ( if .content | type == "string" then empty else .content[] end ) | select(.type == "input_image") | .image_url' --unbuffered \
+          | jq -s 'to_entries[] | [ .value, .key ] | @tsv' -r --unbuffered | cut -d , -f 2- \
           | while IFS=$'\t' read -r image index; do base64 -d <<< "$image" > /tmp/autopuppeteer.step."$index".png; done
     - name: "Upload debug logs"
       if: failure()
