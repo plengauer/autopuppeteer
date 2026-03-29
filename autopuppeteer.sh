@@ -15,13 +15,15 @@ const repl = require("repl").start({ prompt: "", ignoreUndefined: true });
 const eval = repl.eval;
 repl.eval = function (code, context, replResourceName, callback) {
   try {
-    return eval.call(this, code, context, replResourceName, (err, result) => {
+    let result = eval.call(this, code, context, replResourceName, (error, result) => {
       try {
-        return callback(err, result);
+        return callback(error, result);
       } finally {
         require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
       }
     });
+    console.log(result);
+    return result;
   } catch (error) {
     require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
     throw error;
