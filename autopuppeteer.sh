@@ -84,7 +84,7 @@ else
   }
 fi
 
-puppeteer | tee /dev/stderr << EOF
+puppeteer << EOF | tee /dev/stderr
 foo = { bar: "hello world" }
 await foo.bar();
 EOF
