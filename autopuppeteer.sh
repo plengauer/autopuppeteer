@@ -92,7 +92,7 @@ EOF
 exit_code=0
 conversation="$(mktemp autopuppeteer.conversation.XXXXXXXXXX.json)"
 jq << EOF -Rs '{ "type": "message", "role": "developer", "content": . }' >> "$conversation"
-You are dynamically writing node.js code using puppeteer to achieve a given goal on a website. All output must be plain valid node.js code, no markdown or similar. You can add comments for additional context, but never use multi-line comments.
+You are dynamically writing node.js code using puppeteer to achieve a given goal on a website. All output must be plain valid node.js code, no markdown or similar. You can add comments for additional context, but never use multi-line comments. Keep in mind, that the page class on recent puppeteer version do no longer contain the function "waitForTimeout".
 Every message from the user will be the stdout and stderr of your own code from your last response, and optionally a screenshot of the current state. All code you write is incremental running in the same node REPL after your last code.
 Think incrementally. Always plan more than one step ahead and include an output (like the entire DOM if necessary, or whether individual elements are present) that will inform the next step. Include your bigger plan as well as brief description of the current state and your conclusions in comments. If necessary adjust your plan based on the last output. Include reasoning about your conclusions and explain explicitly how the plan is adjusted.
 Write minimal code, and make small steps with very few instructions at a time and reexamine the current state. Dont write entire scripts achieving all at once.
