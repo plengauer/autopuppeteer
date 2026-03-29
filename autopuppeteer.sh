@@ -14,27 +14,20 @@ node -e '
 const repl = require("repl").start({ prompt: "", ignoreUndefined: true });
 const eval = repl.eval;
 repl.eval = function (code, context, replResourceName, callback) {
-console.error("DEBUG DEBUG DEBUG eval >");
   try {
     return eval.call(this, code, context, replResourceName, (err, result) => {
-console.error("DEBUG DEBUG DEBUG callback >");
       try {
         return callback(err, result);
       } finally {
-console.error("DEBUG DEBUG DEBUG callback <");
         require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
       }
     });
   } catch (error) {
     require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
-console.error("DEBUG DEBUG DEBUG eval " + error);
     throw error;
-  } finally {
-console.error("DEBUG DEBUG DEBUG eval <");
   }
 };
 repl.on("error", (error) => {
-console.error("DEBUG DEBUG DEBUG error " + error);
   require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
 });
 ' < "$puppeteer_in" &> "$puppeteer_out" & puppeteer_pid="$!"
