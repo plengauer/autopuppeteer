@@ -36,7 +36,7 @@ exec 5< "$puppeteer_out"
 puppeteer() {
   \stdbuf -oL sed -E 's/(\.\.\.|\|) //g' < "$puppeteer_out" & puppeteer_out_pid="$!"
   local i=15
-  ( grep -vE '^//' || true ) | while IFS=$'\n' read -r line; do rm -rf /tmp/autopuppeteer.repl; printf '%s\n' "$line" > "$puppeteer_in"; while ! [ -r /tmp/autopuppeteer.repl ] && [ "$i" -gt 0 ]; do sleep 1; local i=$((i - 1)); done; done # node is weird
+  ( grep -vE '^//' || true ) | while IFS=$'\n' read -r line; do rm -rf /tmp/autopuppeteer.repl; printf '%s\n' "$line" > "$puppeteer_in"; while ! [ -r /tmp/autopuppeteer.repl ] && [ "$i" -gt 0 ]; do sleep 1; local i=$((i - 1)); done; sleep 1; done # node is weird
   exec 3>&2
   exec 2> /dev/null
   sleep 1 && kill -9 "$puppeteer_out_pid" && { wait "$puppeteer_out_pid" || true; }
