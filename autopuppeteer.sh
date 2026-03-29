@@ -17,9 +17,10 @@ repl.eval = function (code, context, replResourceName, callback) {
   try {
     return eval.call(this, code, context, replResourceName, (err, result) => {
       try {
+        require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
         return callback(err, result);
       } finally {
-        require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
+        // require("fs").writeFileSync("/tmp/autopuppeteer.repl", "");
       }
     });
   } catch (error) {
