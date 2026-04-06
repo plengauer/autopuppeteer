@@ -5,6 +5,9 @@ on:
     branches: main
     paths:
       - 'VERSION'
+      - 'action.yml'
+      - 'autopuppeteer.sh'
+      - 'package.json'
 
 jobs:
 
