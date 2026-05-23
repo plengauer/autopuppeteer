@@ -9,6 +9,8 @@ on:
       - CI
       - Claude
       - CodeQL
+      - Copilot
+      - Copilot cloud agent
       - Copilot code review
       - Copilot coding agent
       - OpenAI Codex
