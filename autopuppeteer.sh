@@ -127,7 +127,6 @@ jq << EOF -Rs '{ "type": "message", "role": "assistant", "content": . }' | tee -
 await page.goto('$URL', { waitUntil: 'networkidle2', });
 // console.log(await page.content());
 EOF
-set -x
 while ( ! jq < "$conversation" 'select(.type == "message") | select(.role == "assistant") | if .content | type == "string" then .content else .content[] | select(.type == "output_text") | .text end' -r | grep -F '// DONE ' > /dev/null ) && [ "$(jq < "$conversation" -s length)" -lt "${MAX_ITERATIONS:-250}" ]; do
   if [ -n "${GUARDRAIL_STRINGS:-}" ] && jq < "$conversation" '.content' -r | grep -qF -- "$GUARDRAIL_STRINGS"; then exit 2; fi
   if [ -n "${GUARDRAIL_PATTERNS:-}" ] && jq < "$conversation" '.content' -r | grep -qE -- "$GUARDRAIL_PATTERNS"; then exit 3; fi
