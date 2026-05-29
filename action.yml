@@ -102,7 +102,7 @@ runs:
         COOKIE: ${{ inputs.cookie }}
         GUARDRAIL_STRINGS: ${{ inputs.guardrail_strings }}
         GUARDRAIL_PATTERNS: ${{ inputs.guardrail_patterns }}
-        DEBUG: ${{ inputs.debug }}
+        # DEBUG: ${{ inputs.debug }}
     - name: Prepare cachee
       shell: bash
       run: jq < /tmp/autopuppeteer.conversation.*.json 'select(.type == "message" and .role == "assistant") | ( if .content | type == "string" then .content else ( .content[] | select(.type == "output_text") | .text ) end )' -r > /tmp/autopuppeteer.assistant.dynamic.js
