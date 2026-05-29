@@ -32,7 +32,7 @@ jobs:
           goal: find the date the english wiki page about giraffes has been last modified
           url: https://www.wikipedia.org/
           openai_api_token: ${{ secrets.OPENAI_TOKEN }}
-          debug: 1
+          # debug: 1
       - run: |
           echo ::notice::"${{ steps.autopuppeteer.outputs.result }}"
           echo ::notice::"$(cat ${{ steps.autopuppeteer.outputs.result_path }})"
