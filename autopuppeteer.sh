@@ -6,6 +6,7 @@ alias mktemp='mktemp --tmpdir'
 alias jq='jq --unbuffered -c'
 
 \unalias exec 2> /dev/null || true # suppress otel instrumentation for exec if instrumented because we re doing quite some magic here ...
+export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="${OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT:-span_and_event}"
 
 puppeteer_in="$(mktemp -u puppeteer.in.XXXXXXXXXX.pipe)"
 puppeteer_out="$(mktemp -u puppeteer.out.XXXXXXXXXX.pipe)"
