@@ -130,7 +130,7 @@ EOF
 while ( ! jq < "$conversation" 'select(.type == "message") | select(.role == "assistant") | if .content | type == "string" then .content else .content[] | select(.type == "output_text") | .text end' -r | grep -F '// DONE ' > /dev/null ) && [ "$(jq < "$conversation" -s length)" -lt "${MAX_ITERATIONS:-250}" ]; do
   if [ -n "${GUARDRAIL_STRINGS:-}" ] && jq < "$conversation" '.content' -r | grep -qF -- "$GUARDRAIL_STRINGS"; then exit 2; fi
   if [ -n "${GUARDRAIL_PATTERNS:-}" ] && jq < "$conversation" '.content' -r | grep -qE -- "$GUARDRAIL_PATTERNS"; then exit 3; fi
-  jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-100}"']) | .[]' | jq -s 'del(.[0:-1].content[] | select(.type == "input_image")) | .[]' \
+  jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-100}"']) | .[]' | jq -s 'del(.[0:-1][].content[] | select(.type == "input_image")) | .[]' \
     | jq -s '{ "input": ., "service_tier": "'"${OPENAI_SERVICE_TIER:-flex}"'", "model": "'"${OPENAI_MODEL:-gpt-5}"'", "reasoning": { "effort": "'"${OPENAI_REASONING_EFFORT:-high}"'" }, tools: [ { type: "web_search", search_context_size: "high" } ] }' \
     | if [ -n "${OPENAI_API_TOKEN:-}" ]; then
       curl --no-progress-meter --fail --retry 4 --max-time "$((60 * 60))" https://api.openai.com/v1/responses -H "Authorization: Bearer $OPENAI_API_TOKEN" -H "Content-Type: application/json" --data-binary @-
