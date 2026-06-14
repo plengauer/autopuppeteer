@@ -7,9 +7,13 @@ inputs:
   url:
     description: 'The URL to start at'
     required: true
-  openai_api_token:
+  openai_token:
     description: 'A valid API token for OpenAI'
     required: true
+  github_token:
+    description: 'A valid API token for GitHub with access to Copilot'
+    required: true
+    default: ${{ github.token }}
   username:
     description: 'The username if needed'
     default: ''
@@ -96,7 +100,8 @@ runs:
       env:
         GOAL: ${{ inputs.goal }}
         URL: ${{ inputs.url }}
-        OPENAI_API_TOKEN: ${{ inputs.openai_api_token }}
+        OPENAI_TOKEN: ${{ inputs.openai_token }}
+        GITHUB_TOKEN: ${{ inputs.github_token }}
         USERNAME: ${{ inputs.username }}
         PASSWORD: ${{ inputs.password }}
         COOKIE: ${{ inputs.cookie }}
