@@ -135,10 +135,10 @@ while ( ! jq < "$conversation" 'select(.type == "message") | select(.role == "as
   jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-100}"']) | .[]' | jq -s 'del(.[:-1][].content[]? | select(.type == "input_image")) | .[]' \
     | jq -s '{ "input": ., "service_tier": "'"${OPENAI_SERVICE_TIER:-flex}"'", "model": "'"${OPENAI_MODEL:-gpt-5}"'", "reasoning": { "effort": "'"${OPENAI_REASONING_EFFORT:-high}"'" }, tools: [ { type: "web_search", search_context_size: "high" } ] }' \
     | if [ -n "${OPENAI_TOKEN:-}" ]; then
-      curl --no-progress-meter --fail --retry 4 --max-time "$((60 * 60))" https://api.openai.com/v1/responses -H "Authorization: Bearer $OPENAI_TOKEN" -H "Content-Type: application/json" --data-binary @-
+      curl --no-progress-meter --fail-with-body --retry 4 --max-time "$((60 * 60))" https://api.openai.com/v1/responses -H "Authorization: Bearer $OPENAI_TOKEN" -H "Content-Type: application/json" --data-binary @-
     elif [ -n "${GITHUB_TOKEN:-}" ]; then
       jq '{ "messages": [ .input[] | select(.type == "message") | { "role": .role, "content": ( if .content | type == "string" then .content else [ .content[] | if .type == "input_text" or .type == "output_text" then { "type": "text", "text": .text } elif .type == "input_image" then { "type": "image_url", "image_url": { "url": .image_url } } else empty end ] end ) } ], "service_tier": .service_tier, "model": ( "openai/" + .model ), "reasoning_effort": .reasoning.effort, "response_format": .text.format }' \
-        | curl --no-progress-meter --fail --retry 4 --max-time "$((60 * 60))" https://models.github.ai/inference/chat/completions -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" --data-binary @- \
+        | curl --no-progress-meter --fail-with-body --retry 4 --max-time "$((60 * 60))" https://models.github.ai/inference/chat/completions -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" --data-binary @- \
         | jq '.choices[0].message | { output: [ { "type": "message", "role": .role, content: [ { type: "output_text", text: .content } ] } ] }'
     else
       cat > /dev/null
