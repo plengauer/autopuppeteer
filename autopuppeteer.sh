@@ -68,16 +68,20 @@ fi
 
 if [ -n "${DISPLAY:-}" ]; then
   enrich_with_screenshot() {
-    {
-      cat
-      local screenshot="$(mktemp)" && puppeteer << EOF &> /dev/null
+    local message="$(cat)"
+    local screenshot="$(mktemp --suffix=.png)"
+    puppeteer << EOF &> /dev/null
 await page.screenshot({ path: '$screenshot' });
 EOF
-      cat << EOF
-"data:image/png;base64,$(base64 < "$screenshot" | tr -d '\n')"
-EOF
-      rm "$screenshot"
-    } | jq -s '.[0].content = [ { "type": "input_text", "text": .[0].content | (if . | type == "string" then . else .[].text end) }, { "type": "input_image", "image_url": .[1] } ] | .[0]'
+    if [ -s "$screenshot" ]; then # only attach a screenshot if it was actually written; an empty file yields an empty base64 data url which the api rejects
+      {
+        printf '%s\n' "$message"
+        printf '"data:image/png;base64,%s"\n' "$(base64 < "$screenshot" | tr -d '\n')"
+      } | jq -s '.[0].content = [ { "type": "input_text", "text": (.[0].content | (if . | type == "string" then . else .[].text end)) }, { "type": "input_image", "image_url": .[1] } ] | .[0]'
+    else
+      printf '%s\n' "$message"
+    fi
+    rm -f "$screenshot"
   }
 else
   enrich_with_screenshot() {
