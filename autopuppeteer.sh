@@ -103,6 +103,7 @@ There are several ways to extract a result, for example by extracting the right 
 When you are stuck and there are low chances of success, print "// DONE FAILURE". If you encounter two factor authentication that cannot be circumvented by re-entering the password, fail immediately with the right comment which indiciates failure.
 If you need to use sensitive data, like username or password, assume that their raw values are stored in string constants called __USERNAME__ and __PASSWORD__ respectively.
 Think extra hard and follow these instructions to the letter!
+Start at $URL.
 $GOAL
 ${HINT:-}
 EOF
