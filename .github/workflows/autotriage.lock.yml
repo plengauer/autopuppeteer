@@ -101,7 +101,7 @@ jobs:
           OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
       - name: Setup Scripts
         id: setup
-        uses: github/gh-aw-actions/setup@b078ca291c0c4d3f7bfb88b0f9a01dfb718671e3 # v0.85.1
+        uses: github/gh-aw-actions/setup@2709137ea6c5b0e19aa621454dc643ea8dc526b1 # v0.85.4
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
           job-name: ${{ github.job }}
@@ -437,7 +437,7 @@ jobs:
           OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
       - name: Setup Scripts
         id: setup
-        uses: github/gh-aw-actions/setup@b078ca291c0c4d3f7bfb88b0f9a01dfb718671e3 # v0.85.1
+        uses: github/gh-aw-actions/setup@2709137ea6c5b0e19aa621454dc643ea8dc526b1 # v0.85.4
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
           job-name: ${{ github.job }}
@@ -1073,7 +1073,7 @@ jobs:
           OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
       - name: Setup Scripts
         id: setup
-        uses: github/gh-aw-actions/setup@b078ca291c0c4d3f7bfb88b0f9a01dfb718671e3 # v0.85.1
+        uses: github/gh-aw-actions/setup@2709137ea6c5b0e19aa621454dc643ea8dc526b1 # v0.85.4
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
           job-name: ${{ github.job }}
@@ -1331,7 +1331,7 @@ jobs:
           OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
       - name: Setup Scripts
         id: setup
-        uses: github/gh-aw-actions/setup@b078ca291c0c4d3f7bfb88b0f9a01dfb718671e3 # v0.85.1
+        uses: github/gh-aw-actions/setup@2709137ea6c5b0e19aa621454dc643ea8dc526b1 # v0.85.4
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
           job-name: ${{ github.job }}
@@ -1580,7 +1580,7 @@ jobs:
             ${{ secrets.GITHUB_TOKEN }}
       - name: Setup Scripts
         id: setup
-        uses: github/gh-aw-actions/setup@b078ca291c0c4d3f7bfb88b0f9a01dfb718671e3 # v0.85.1
+        uses: github/gh-aw-actions/setup@2709137ea6c5b0e19aa621454dc643ea8dc526b1 # v0.85.4
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
           job-name: ${{ github.job }}
@@ -1653,7 +1653,7 @@ jobs:
           OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
       - name: Setup Scripts
         id: setup
-        uses: github/gh-aw-actions/setup@b078ca291c0c4d3f7bfb88b0f9a01dfb718671e3 # v0.85.1
+        uses: github/gh-aw-actions/setup@2709137ea6c5b0e19aa621454dc643ea8dc526b1 # v0.85.4
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
           job-name: ${{ github.job }}
