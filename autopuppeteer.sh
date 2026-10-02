@@ -141,10 +141,8 @@ while ( ! jq < "$conversation" 'select(.type == "message") | select(.role == "as
     | if [ -n "${OPENAI_TOKEN:-}" ]; then
       curl --no-progress-meter --fail-with-body --retry 4 --max-time "$((60 * 60))" https://api.openai.com/v1/responses -H "Authorization: Bearer $OPENAI_TOKEN" -H "Content-Type: application/json" --data-binary @-
     elif [ -n "${GITHUB_TOKEN:-}" ]; then
-      copilot_token="$(curl --no-progress-meter --fail-with-body --retry 4 --max-time 60 https://api.github.com/copilot_internal/v2/token -H "Authorization: token $GITHUB_TOKEN" -H "User-Agent: GithubCopilot/1.155.0" -H "Editor-Version: vscode/1.99.0" -H "Editor-Plugin-Version: copilot-chat/0.26.7" | jq -r .token)"
-      jq '{ "messages": [ .input[] | select(.type == "message") | { "role": .role, "content": ( if .content | type == "string" then .content else [ .content[] | if .type == "input_text" or .type == "output_text" then { "type": "text", "text": .text } elif .type == "input_image" then { "type": "image_url", "image_url": { "url": .image_url } } else empty end ] end ) } ], "service_tier": .service_tier, "model": .model, "reasoning_effort": .reasoning.effort, "response_format": .text.format }' \
-        | curl --no-progress-meter --fail-with-body --retry 4 --max-time "$((60 * 60))" https://api.githubcopilot.com/chat/completions -H "Authorization: Bearer $copilot_token" -H "Content-Type: application/json" -H "Copilot-Integration-Id: vscode-chat" -H "Editor-Version: vscode/1.99.0" -H "Editor-Plugin-Version: copilot-chat/0.26.7" -H "User-Agent: GitHubCopilotChat/0.26.7" -H "OpenAI-Intent: conversation-panel" --data-binary @- \
-        | jq '.choices[0].message | { output: [ { "type": "message", "role": .role, content: [ { type: "output_text", text: .content } ] } ] }'
+      jq '.input |= map(select(.type == "message")) | del(.service_tier)' \
+        | curl --no-progress-meter --fail-with-body --retry 4 --max-time "$((60 * 60))" https://api.githubcopilot.com/responses -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" -H "Copilot-Integration-Id: copilot-developer-cli" -H "Openai-Intent: conversation-agent" -H "X-Initiator: user" -H "X-GitHub-Api-Version: 2025-05-01" --data-binary @-
     else
       cat > /dev/null
       echo '{ "output": [ { "type": "message", "role": "assistant", "content": [ { "type": "output_text", "text": "// DONE FAILURE (missing token)" } ] } ] }'
