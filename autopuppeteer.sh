@@ -1,4 +1,8 @@
 #!/bin/bash
+export LOG_CURL=true
+\unalias command
+\unalias curl
+
 set -eu -o pipefail
 
 shopt -s expand_aliases
