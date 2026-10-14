@@ -1,8 +1,4 @@
 #!/bin/bash
-export LOG_CURL=true
-\unalias command
-\unalias curl
-
 set -eu -o pipefail
 
 shopt -s expand_aliases
@@ -64,9 +60,13 @@ elif [ "${LOG_PUPPETEER_IN:-false}" = true ]; then
   alias puppeteer='loggify_in /dev/stderr puppeteer'
 fi
 if [ "${LOG_CURL:-false}" = true ]; then
-  function curl() {
+  function my_curl() {
     id="$RANDOM"
-    loggify "$(mktemp autopuppeteer.curl."$id".in.XXXXXXXXXX.json)" "$(mktemp autopuppeteer.curl."$id".out.XXXXXXXXXX.json)" command curl -v "$@" 2> "$(mktemp autopuppeteer.curl."$id".err.XXXXXXXXXX.log)"
+    loggify "$(mktemp autopuppeteer.curl."$id".in.XXXXXXXXXX.json)" "$(mktemp autopuppeteer.curl."$id".out.XXXXXXXXXX.json)" curl -v "$@" 2> "$(mktemp autopuppeteer.curl."$id".err.XXXXXXXXXX.log)"
+  }
+else
+  function my_curl() {
+    curl "$@"
   }
 fi
 
@@ -143,10 +143,10 @@ while ( ! jq < "$conversation" 'select(.type == "message") | select(.role == "as
   jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-100}"']) | .[]' | jq -s 'del(.[:-1][].content[]? | select(.type == "input_image")) | .[]' \
     | jq -s '{ "input": ., "service_tier": "'"${SERVICE_TIER:-flex}"'", "model": "'"${MODEL:-gpt-5.3-codex}"'", "reasoning": { "effort": "'"${REASONING_EFFORT:-high}"'" }, tools: [ { type: "web_search", search_context_size: "high" } ] }' \
     | if [ -n "${OPENAI_TOKEN:-}" ]; then
-      curl --no-progress-meter --fail-with-body --retry 4 --max-time "$((60 * 60))" https://api.openai.com/v1/responses -H "Authorization: Bearer $OPENAI_TOKEN" -H "Content-Type: application/json" --data-binary @-
+      my_curl --no-progress-meter --fail-with-body --retry 4 --max-time "$((60 * 60))" https://api.openai.com/v1/responses -H "Authorization: Bearer $OPENAI_TOKEN" -H "Content-Type: application/json" --data-binary @-
     elif [ -n "${GITHUB_TOKEN:-}" ]; then
       jq '.input |= map(select(.type == "message")) | del(.service_tier)' \
-        | curl --no-progress-meter --fail-with-body --retry 4 --max-time "$((60 * 60))" https://api.githubcopilot.com/responses -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" -H "Copilot-Integration-Id: copilot-developer-cli" -H "Openai-Intent: conversation-agent" -H "X-Initiator: user" -H "X-GitHub-Api-Version: 2025-05-01" --data-binary @-
+        | my_curl --no-progress-meter --fail-with-body --retry 4 --max-time "$((60 * 60))" https://api.githubcopilot.com/responses -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" -H "Copilot-Integration-Id: copilot-developer-cli" -H "Openai-Intent: conversation-agent" -H "X-Initiator: user" -H "X-GitHub-Api-Version: 2025-05-01" --data-binary @-
     else
       cat > /dev/null
       echo '{ "output": [ { "type": "message", "role": "assistant", "content": [ { "type": "output_text", "text": "// DONE FAILURE (missing token)" } ] } ] }'
