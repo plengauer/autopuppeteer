@@ -141,11 +141,11 @@ while ( ! jq < "$conversation" 'select(.type == "message") | select(.role == "as
   if [ -n "${GUARDRAIL_STRINGS:-}" ] && jq < "$conversation" '.content' -r | grep -qF -- "$GUARDRAIL_STRINGS"; then exit 2; fi
   if [ -n "${GUARDRAIL_PATTERNS:-}" ] && jq < "$conversation" '.content' -r | grep -qE -- "$GUARDRAIL_PATTERNS"; then exit 3; fi
   jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-100}"']) | .[]' | jq -s 'del(.[:-1][].content[]? | select(.type == "input_image")) | .[]' \
-    | jq -s '{ "input": ., "service_tier": "'"${SERVICE_TIER:-flex}"'", "model": "'"${MODEL:-gpt-5.3-codex}"'", "reasoning": { "effort": "'"${REASONING_EFFORT:-high}"'" }, tools: [ { type: "web_search", search_context_size: "high" } ] }' \
+    | jq -s '{ "input": ., "model": "'"${MODEL:-gpt-5.3-codex}"'", "reasoning": { "effort": "'"${REASONING_EFFORT:-high}"'" }, tools: [ { type: "web_search", search_context_size: "high" } ] }' \
     | if [ -n "${OPENAI_TOKEN:-}" ]; then
       my_curl --no-progress-meter --fail-with-body --retry 4 --max-time "$((60 * 60))" https://api.openai.com/v1/responses -H "Authorization: Bearer $OPENAI_TOKEN" -H "Content-Type: application/json" --data-binary @-
     elif [ -n "${GITHUB_TOKEN:-}" ]; then
-      jq '.input |= map(select(.type == "message")) | del(.service_tier)' \
+      jq '.input |= map(select(.type == "message"))' \
         | my_curl --no-progress-meter --fail-with-body --retry 4 --max-time "$((60 * 60))" https://api.githubcopilot.com/responses -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" -H "Copilot-Integration-Id: copilot-developer-cli" -H "Openai-Intent: conversation-agent" -H "X-Initiator: user" -H "X-GitHub-Api-Version: 2025-05-01" --data-binary @-
     else
       cat > /dev/null
