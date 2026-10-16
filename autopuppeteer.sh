@@ -66,7 +66,7 @@ if [ "${LOG_CURL:-false}" = true ]; then
   }
 else
   function my_curl() {
-    curl "$@"
+    curl "$@" | tee /dev/stderr
   }
 fi
 
