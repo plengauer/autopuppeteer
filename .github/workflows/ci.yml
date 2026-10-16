@@ -39,7 +39,7 @@ jobs:
           url: https://www.wikipedia.org/
           openai_token: ${{ matrix.token == 'openai' && secrets.OPENAI_TOKEN || '' }}
           github_token: ${{ secrets.ACTIONS_GITHUB_TOKEN }}
-          debug: 1
+          # debug: 1
       - run: |
           echo ::notice::"${{ steps.autopuppeteer.outputs.result }}"
           echo ::notice::"$(cat ${{ steps.autopuppeteer.outputs.result_path }})"
