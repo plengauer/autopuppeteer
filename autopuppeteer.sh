@@ -93,6 +93,30 @@ else
   }
 fi
 
+guardrail_handle() {
+  [ -n "${GUARDRAIL_HANDLER:-}" ] || return 0
+  local match
+  while IFS= read -r match; do
+    [ -n "$match" ] || continue
+    echo "::add-mask::$match" >&2
+    GUARDRAIL_MATCH="$match" bash -c "$GUARDRAIL_HANDLER" guardrail "$match" >&2 || echo "guardrail handler failed" >&2
+  done <<< "$1"
+}
+guardrail() {
+  local strings patterns matches
+  strings="$(printf '%s\n' "${GUARDRAIL_STRINGS:-}" | grep -v '^$' || true)"
+  patterns="$(printf '%s\n' "${GUARDRAIL_PATTERNS:-}" | grep -v '^$' || true)"
+  if [ -n "$strings" ]; then
+    matches="$(jq < "$conversation" -r '.content | if type == "string" then . else (.[]? | .text? // empty) end' | grep -oF -- "$strings" | sort -u || true)"
+    if [ -n "$matches" ]; then guardrail_handle "$matches"; return 2; fi
+  fi
+  if [ -n "$patterns" ]; then
+    matches="$(jq < "$conversation" -r '.content | if type == "string" then . else (.[]? | .text? // empty) end' | grep -oE -- "$patterns" | sort -u || true)"
+    if [ -n "$matches" ]; then guardrail_handle "$matches"; return 3; fi
+  fi
+  return 0
+}
+
 puppeteer << EOF &> /dev/null
 const __USERNAME__ = '$USERNAME';
 const __PASSWORD__ = '$PASSWORD';
@@ -138,8 +162,9 @@ await page.goto('$URL', { waitUntil: 'networkidle2', });
 // console.log(await page.content());
 EOF
 while ( ! jq < "$conversation" 'select(.type == "message") | select(.role == "assistant") | if .content | type == "string" then .content else .content[] | select(.type == "output_text") | .text end' -r | grep -F '// DONE ' > /dev/null ) && [ "$(jq < "$conversation" -s length)" -lt "${MAX_ITERATIONS:-250}" ]; do
-  if [ -n "${GUARDRAIL_STRINGS:-}" ] && jq < "$conversation" '.content' -r | grep -qF -- "$GUARDRAIL_STRINGS"; then exit 2; fi
-  if [ -n "${GUARDRAIL_PATTERNS:-}" ] && jq < "$conversation" '.content' -r | grep -qE -- "$GUARDRAIL_PATTERNS"; then exit 3; fi
+  guardrail_code=0
+  guardrail || guardrail_code=$?
+  if [ "$guardrail_code" != 0 ]; then exit "$guardrail_code"; fi
   jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-100}"']) | .[]' | jq -s 'del(.[:-1][].content[]? | select(.type == "input_image")) | .[]' \
     | jq -s '{ "input": ., "model": "'"${MODEL:-gpt-5.3-codex}"'", "reasoning": { "effort": "'"${REASONING_EFFORT:-high}"'" }, tools: [ { type: "web_search", search_context_size: "high" } ] }' \
     | if [ -n "${OPENAI_TOKEN:-}" ]; then
