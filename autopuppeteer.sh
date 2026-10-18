@@ -130,7 +130,7 @@ Every message from the user will be the stdout and stderr of your own code from 
 Think incrementally. Always plan more than one step ahead and include an output (like the entire DOM if necessary, or whether individual elements are present) that will inform the next step. Include your bigger plan as well as brief description of the current state and your conclusions in comments. If necessary adjust your plan based on the last output. Include reasoning about your conclusions and explain explicitly how the plan is adjusted.
 Write minimal code, and make small steps with very few instructions at a time and reexamine the current state. Dont write entire scripts achieving all at once.
 When you have achieved your goal, start your next response with a comment that is exactly "// DONE SUCCESS" and emit code to print only result and nothing else to stdout. Print it in its natural form. If its just a string, print it plain. If the result is a json, print it as json. If there is no explicit result to the task then respond with the comment alone.
-When printing a result and finishing successfully, assign the result to a variable and verify its integrety. Then in a subsequent step emit code to print the result itself in plain text with the "// DONE SUCCESS" marker. This is to make sure that the print step doesnt fail and an error message is interpreted as the result. Do not just print that the result has been found and assigned to a variable, or some meta information about it. In your last step with the success marker, print the value itself.
+When printing a result and finishing successfully, assign the result to a variable and verify its integrety. Then in a subsequent step emit code to print the result itself in plain text with the "// DONE SUCCESS" marker. This is to make sure that the print step doesnt fail and an error message is interpreted as the result. Do not just print that the result has been found and assigned to a variable, or some meta information about it. In your last step with the success marker, print the value itself. Print the result with exactly one statement of the form console.log(result), where result is a variable holding only the raw value (no label, no quotes, no trailing newline). Never use process.stdout.write, console.info, console.error, or any other way to print, never print the value more than once, and do not add any statement after it, because the REPL echoes the value of the last expression and process.stdout.write would therefore append the text "true" to the result.
 There are several ways to extract a result, for example by extracting the right part from the DOM, to copy it via the clipboard, or read it from the screenshot and emit it as a constant.
 When you are stuck and there are low chances of success, print "// DONE FAILURE". If you encounter two factor authentication that cannot be circumvented by re-entering the password, fail immediately with the right comment which indiciates failure.
 If you need to use sensitive data, like username or password, assume that their raw values are stored in string constants called __USERNAME__ and __PASSWORD__ respectively.
@@ -181,7 +181,12 @@ while ( ! jq < "$conversation" 'select(.type == "message") | select(.role == "as
     | jq -Rs '{ "type": "message", "role": "user", "content": [ { "type": "input_text", "text": . } ] }' | enrich_with_screenshot >> "$conversation"
 done
 jq < "$conversation" 'select(.role == "assistant") | if .content | type == "string" then .content else .content[] | select(.type == "output_text") | .text end' -r | grep -qF '// DONE SUCCESS' || exit_code=1
-if [ "$exit_code" = 0 ]; then jq < "$conversation" -s '.[-1] | if .content | type == "string" then .content else .content[] | select(.type == "input_text") | .text end' -r; fi
+if [ "$exit_code" = 0 ]; then
+  result="$(jq < "$conversation" -s '.[-1] | if .content | type == "string" then .content else .content[] | select(.type == "input_text") | .text end' -r)"
+  first_line="$(printf '%s\n' "$result" | head -n 1)"
+  if [ -n "$first_line" ]; then echo "::add-mask::$first_line" >&2; fi
+  printf '%s\n' "$result"
+fi
 jq << EOF -Rs '{ "type": "message", "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "type": "message", "role": "user", "content": . }' >> "$conversation"
 await browser.close();
 // process.exit(0);
