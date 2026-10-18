@@ -31,6 +31,9 @@ inputs:
     default: ''
   guardrail_patterns:
     default: ''
+  guardrail_handler:
+    description: Bash code that is run once for every distinct string that triggered a guardrail, before the action fails. The matching string is passed as the first argument and in the environment variable GUARDRAIL_MATCH. It is also masked in the logs.
+    default: ''
   cache_key:
     description: Key for the cache
     default: 'autopuppeteer ${{ github.workflow }}-${{ github.job }}'
@@ -107,6 +110,7 @@ runs:
         COOKIE: ${{ inputs.cookie }}
         GUARDRAIL_STRINGS: ${{ inputs.guardrail_strings }}
         GUARDRAIL_PATTERNS: ${{ inputs.guardrail_patterns }}
+        GUARDRAIL_HANDLER: ${{ inputs.guardrail_handler }}
         DEBUG: ${{ inputs.debug }}
     - name: Prepare cachee
       shell: bash
