@@ -130,7 +130,7 @@ const browser = await puppeteer.launch({ headless: $([ -n "${DISPLAY:-}" ] && ec
 const page = await browser.newPage();
 EOF
 puppeteer << EOF &> /dev/null
-if (__COOKIE__) { await page.setExtraHTTPHeaders({ Cookie: __COOKIE__ }); }
+if (__COOKIE__) { const origin = new URL('$URL').origin; await page.setCookie(...__COOKIE__.split(/;\s*/).filter(Boolean).map(c => { const i = c.indexOf('='); return { name: c.slice(0, i), value: c.slice(i + 1), url: origin, path: '/', secure: origin.startsWith('https:') }; })); }
 EOF
 intro_count="$(jq < "$conversation" -s length)"
 jq << EOF -Rs '{ "type": "message", "role": "assistant", "content": . }' | tee -a "$conversation" | jq .content -r | puppeteer | jq -Rs '{ "type": "message", "role": "user", "content": . }' | enrich_with_screenshot >> "$conversation"
