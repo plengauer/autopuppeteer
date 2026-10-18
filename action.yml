@@ -90,9 +90,7 @@ runs:
         $(cat /tmp/autopuppeteer.assistant.dynamic.js)"
           rm /tmp/autopuppeteer.assistant.dynamic.js
         fi
-        export GUARDRAIL_STRINGS="$(printf '%s' "$PASSWORD
-        $PATTERNS
-        $GUARDRAIL_STRINGS")"
+        export GUARDRAIL_STRINGS="$(printf '%s\n%s' "$PASSWORD" "$GUARDRAIL_STRINGS")"
         cd ${{ github.action_path }}
         result_path="$(mktemp)"
         echo result_path="$result_path" >> "$GITHUB_OUTPUT"
