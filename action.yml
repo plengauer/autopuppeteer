@@ -99,7 +99,7 @@ runs:
         echo result_path="$result_path" >> "$GITHUB_OUTPUT"
         bash autopuppeteer.sh | tee "$result_path" > "$result_path.stdout"
         delimiter="EOF_$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"
-        { echo "result<<$delimiter"; cat "$result_path.stdout"; echo; echo "$delimiter"; } >> "$GITHUB_OUTPUT"
+        { echo "result<<$delimiter"; printf '%s\n' "$(cat "$result_path.stdout")"; echo "$delimiter"; } >> "$GITHUB_OUTPUT"
       env:
         GOAL: ${{ inputs.goal }}
         URL: ${{ inputs.url }}
