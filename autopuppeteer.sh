@@ -166,7 +166,7 @@ while ( ! jq < "$conversation" 'select(.type == "message") | select(.role == "as
   guardrail || guardrail_code=$?
   if [ "$guardrail_code" != 0 ]; then exit "$guardrail_code"; fi
   jq < "$conversation" -s 'del(.['"$intro_count"':-'"${MEMORY:-100}"']) | .[]' | jq -s 'del(.[:-1][].content[]? | select(.type == "input_image")) | .[]' \
-    | jq -s '{ "input": ., "model": "'"${MODEL:-gpt-5.3-codex}"'", "reasoning": { "effort": "'"${REASONING_EFFORT:-high}"'" }, tools: [ { type: "web_search", search_context_size: "high" } ] }' \
+    | jq -s '{ "input": ., "model": "'"${MODEL:-gpt-6-luna}"'", "reasoning": { "effort": "'"${REASONING_EFFORT:-high}"'" }, tools: [ { type: "web_search", search_context_size: "high" } ] }' \
     | if [ -n "${OPENAI_TOKEN:-}" ]; then
       my_curl --no-progress-meter --fail-with-body --retry 4 --max-time "$((60 * 60))" https://api.openai.com/v1/responses -H "Authorization: Bearer $OPENAI_TOKEN" -H "Content-Type: application/json" --data-binary @-
     elif [ -n "${GITHUB_TOKEN:-}" ]; then
